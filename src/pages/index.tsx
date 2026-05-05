@@ -220,14 +220,16 @@ export default function Dashboard() {
                                   <h4 className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-4">Финансовый расчет</h4>
                                   <div className="space-y-2">
                                     <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
-                                      <span className="text-blue-100">Товары (Invoice):</span>
+                                      <span className="text-blue-100">Товары (Invoice + Таможня):</span>
                                       <span className="font-bold">
-                                        $ {(order.order_items?.reduce((sum: number, item: any) => {
-                                          const p = parseFloat(item.actual_price_rmb || item.price_per_unit_rmb) || 0;
-                                          const q = parseFloat(item.actual_qty || item.total_qty) || 0;
-                                          return sum + (p * q);
-                                        }, 0) / (order.exchange_rate / (order.exchange_rate_usd || 1))).toFixed(2)}
-                                        {/* Упрощенно: если нет кросс-курса в базе, используем системный или просто показываем компоненты */}
+                                        $ {Math.max(0, (
+                                          (order.total_amount_rub / (order.exchange_rate_usd || 75.44)) - 
+                                          (parseFloat(order.logistic_cost_usd || 0) + 
+                                           parseFloat(order.bank_fees_usd || 0) + 
+                                           parseFloat(order.company_service_usd || 0) + 
+                                           parseFloat(order.certification_usd || 0) + 
+                                           parseFloat(order.labeling_usd || 0))
+                                        )).toFixed(2)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">

@@ -152,14 +152,16 @@ export default function OrderDetails() {
 
     // ФИНАЛЬНЫЙ ИТОГ
     const totalUsd = itemsTotalUsd + customsUsd + logisticUsd + bankUsd + serviceUsd + certUsd + labelUsd + chargesTotalUsd;
-    const finalRub = totalUsd * (order.exchange_rate || rates.cny);
+    const finalRub = totalUsd * rates.usd; // Умножаем USD на курс Доллара!
 
     // Сохраняем все поля
     const { error } = await supabase
       .from('orders')
       .update({
-        total_amount_rmb: totalUsd * rates.cross, // Сохраняем общую сумму в RMB для истории
+        total_amount_rmb: totalUsd * (rates.usd / rates.cny), 
         total_amount_rub: finalRub,
+        exchange_rate: rates.cny,
+        exchange_rate_usd: rates.usd, // Добавляем сохранение курса доллара
         logistic_cost_usd: logisticUsd,
         bank_fees_usd: bankUsd,
         company_service_usd: serviceUsd,
