@@ -65,8 +65,28 @@ export default function OrderDetails() {
   };
 
   async function saveItem(itemId: string, field: string, value: any) {
-    const safeValue = (typeof value === 'number' && isNaN(value)) ? 0 : value;
+    let safeValue = value;
+    if (field !== 'hscode') {
+      const num = parseFloat(value);
+      safeValue = isNaN(num) ? 0 : num;
+    }
     await supabase.from('order_items').update({ [field]: safeValue }).eq('id', itemId);
+  }
+
+  async function saveOrder(field: string, value: any) {
+    let safeValue = value;
+    const numericFields = [
+      'logistic_cost_usd', 'bank_fees_usd', 'company_service_usd', 
+      'certification_usd', 'labeling_usd', 'payment_1_rub', 
+      'payment_2_rub', 'payment_3_rub'
+    ];
+    
+    if (numericFields.includes(field)) {
+      const num = parseFloat(value);
+      safeValue = isNaN(num) ? 0 : num;
+    }
+    
+    await supabase.from('orders').update({ [field]: safeValue }).eq('id', id);
   }
 
   async function saveOrder(field: string, value: any) {
@@ -96,9 +116,9 @@ export default function OrderDetails() {
     setLoading(true);
     // Считаем сумму товаров
     const itemsTotal = items.reduce((sum, item) => {
-      const price = item.actual_price_rmb !== null && item.actual_price_rmb !== undefined ? item.actual_price_rmb : item.price_per_unit_rmb;
-      const qty = item.actual_qty !== null && item.actual_qty !== undefined ? item.actual_qty : item.total_qty;
-      return sum + (price * qty);
+      const price = (item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb;
+      const qty = (item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty;
+      return sum + (parseFloat(price) * parseFloat(qty));
     }, 0);
 
     const chargesTotal = extraCharges.reduce((sum, charge) => sum + (parseFloat(charge.amount_rmb) || 0), 0);
@@ -121,17 +141,25 @@ export default function OrderDetails() {
   const isExecutive = profile?.role === 'admin' || profile?.role === 'ispolnitel';
   
   // Расчеты
-  const totalInvoiceRmb = items.reduce((sum, item) => sum + ((item.actual_price_rmb || item.price_per_unit_rmb) * (item.actual_qty || item.total_qty)), 0);
+  const totalInvoiceRmb = items.reduce((sum, item) => {
+    const price = (item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb;
+    const qty = (item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty;
+    return sum + (parseFloat(price) * parseFloat(qty));
+  }, 0);
   const totalInvoiceUsd = totalInvoiceRmb / rates.cross;
 
   const totalDutyRmb = items.reduce((sum, item) => {
-    const cost = (item.actual_price_rmb || item.price_per_unit_rmb) * (item.actual_qty || item.total_qty);
-    return sum + (cost * (item.duty_percent || 0) / 100);
+    const price = (item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb;
+    const qty = (item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty;
+    const cost = parseFloat(price) * parseFloat(qty);
+    return sum + (cost * (parseFloat(item.duty_percent) || 0) / 100);
   }, 0);
 
   const totalVatRmb = items.reduce((sum, item) => {
-    const cost = (item.actual_price_rmb || item.price_per_unit_rmb) * (item.actual_qty || item.total_qty);
-    const duty = cost * (item.duty_percent || 0) / 100;
+    const price = (item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb;
+    const qty = (item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty;
+    const cost = parseFloat(price) * parseFloat(qty);
+    const duty = cost * (parseFloat(item.duty_percent) || 0) / 100;
     return sum + ((cost + duty) * 0.22); // НДС 22%
   }, 0);
 
@@ -193,17 +221,17 @@ export default function OrderDetails() {
                         <td className="px-4 py-4">
                           {isExecutive ? (
                             <div className="grid grid-cols-3 gap-1">
-                              <input placeholder="ТН ВЭД" className="border rounded p-1 text-[10px]" value={item.hscode || ''} 
+                              <input placeholder="ТН ВЭД" className="border rounded p-1 text-[10px]" value={item.hscode ?? ''} 
                                 onChange={(e) => handleItemChange(item.id, 'hscode', e.target.value)} 
                                 onBlur={(e) => saveItem(item.id, 'hscode', e.target.value)}
                               />
-                              <input placeholder="Вес кг" type="number" className="border rounded p-1 text-[10px]" value={item.weight_kg || ''} 
-                                onChange={(e) => handleItemChange(item.id, 'weight_kg', parseFloat(e.target.value))} 
-                                onBlur={(e) => saveItem(item.id, 'weight_kg', parseFloat(e.target.value))}
+                              <input placeholder="Вес кг" type="number" step="0.01" className="border rounded p-1 text-[10px]" value={item.weight_kg ?? ''} 
+                                onChange={(e) => handleItemChange(item.id, 'weight_kg', e.target.value)} 
+                                onBlur={(e) => saveItem(item.id, 'weight_kg', e.target.value)}
                               />
-                              <input placeholder="Объем м3" type="number" className="border rounded p-1 text-[10px]" value={item.volume_m3 || ''} 
-                                onChange={(e) => handleItemChange(item.id, 'volume_m3', parseFloat(e.target.value))} 
-                                onBlur={(e) => saveItem(item.id, 'volume_m3', parseFloat(e.target.value))}
+                              <input placeholder="Объем м3" type="number" step="0.01" className="border rounded p-1 text-[10px]" value={item.volume_m3 ?? ''} 
+                                onChange={(e) => handleItemChange(item.id, 'volume_m3', e.target.value)} 
+                                onBlur={(e) => saveItem(item.id, 'volume_m3', e.target.value)}
                               />
                             </div>
                           ) : (
@@ -215,31 +243,35 @@ export default function OrderDetails() {
                         <td className="px-4 py-4">
                           {isExecutive ? (
                             <div className="flex gap-1">
-                              <input type="number" className="w-14 border rounded p-1 font-bold text-blue-600" value={item.actual_price_rmb || ''} placeholder={item.price_per_unit_rmb} 
-                                onChange={(e) => handleItemChange(item.id, 'actual_price_rmb', parseFloat(e.target.value))} 
-                                onBlur={(e) => saveItem(item.id, 'actual_price_rmb', parseFloat(e.target.value))}
+                              <input type="number" step="0.01" className="w-14 border rounded p-1 font-bold text-blue-600" value={item.actual_price_rmb ?? ''} placeholder={item.price_per_unit_rmb} 
+                                onChange={(e) => handleItemChange(item.id, 'actual_price_rmb', e.target.value)} 
+                                onBlur={(e) => saveItem(item.id, 'actual_price_rmb', e.target.value)}
                               />
-                              <input type="number" className="w-10 border rounded p-1" value={item.actual_qty || ''} placeholder={item.total_qty} 
-                                onChange={(e) => handleItemChange(item.id, 'actual_qty', parseInt(e.target.value))} 
-                                onBlur={(e) => saveItem(item.id, 'actual_qty', parseInt(e.target.value))}
+                              <input type="number" className="w-10 border rounded p-1" value={item.actual_qty ?? ''} placeholder={item.total_qty} 
+                                onChange={(e) => handleItemChange(item.id, 'actual_qty', e.target.value)} 
+                                onBlur={(e) => saveItem(item.id, 'actual_qty', e.target.value)}
                               />
                             </div>
                           ) : (
-                            <div className="font-medium">{item.actual_price_rmb || item.price_per_unit_rmb} ¥ × {item.actual_qty || item.total_qty} шт.</div>
+                            <div className="font-medium">
+                              {(item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb} ¥ × 
+                              {(item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty} шт.
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-4">
                           {isExecutive ? (
-                            <input type="number" className="w-12 border rounded p-1 font-bold text-orange-600" value={item.duty_percent || ''} 
-                              onChange={(e) => handleItemChange(item.id, 'duty_percent', parseFloat(e.target.value))} 
-                              onBlur={(e) => saveItem(item.id, 'duty_percent', parseFloat(e.target.value))}
+                            <input type="number" step="0.1" className="w-12 border rounded p-1 font-bold text-orange-600" value={item.duty_percent ?? ''} 
+                              onChange={(e) => handleItemChange(item.id, 'duty_percent', e.target.value)} 
+                              onBlur={(e) => saveItem(item.id, 'duty_percent', e.target.value)}
                             />
                           ) : (
                             <span className="font-bold text-orange-600">{item.duty_percent}%</span>
                           )}
                         </td>
                         <td className="px-4 py-4 text-right font-bold text-gray-900">
-                          $ {(((item.actual_price_rmb || item.price_per_unit_rmb) * (item.actual_qty || item.total_qty)) / rates.cross).toFixed(2)}
+                          $ {(((parseFloat((item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb) || 0) * 
+                               (parseFloat((item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty) || 0)) / rates.cross).toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -283,9 +315,9 @@ export default function OrderDetails() {
                     <div key={p.key}>
                       <label className="text-[10px] font-bold text-gray-400 uppercase">{p.label} платеж</label>
                       {isExecutive ? (
-                        <input type="number" className="w-full border rounded-lg p-2 text-xs font-bold" value={order[p.key] || ''} 
-                          onChange={(e) => handleOrderChange(p.key, parseFloat(e.target.value))} 
-                          onBlur={(e) => saveOrder(p.key, parseFloat(e.target.value))}
+                        <input type="number" step="0.01" className="w-full border rounded-lg p-2 text-xs font-bold" value={order[p.key] ?? ''} 
+                          onChange={(e) => handleOrderChange(p.key, e.target.value)} 
+                          onBlur={(e) => saveOrder(p.key, e.target.value)}
                         />
                       ) : (
                         <div className="text-sm font-bold">{order[p.key]?.toLocaleString()} ₽</div>
@@ -325,9 +357,9 @@ export default function OrderDetails() {
                         <span className="text-xs text-gray-500">{field.label}:</span>
                         {isExecutive ? (
                           <div className="flex items-center gap-1">
-                            <input type="number" className="w-20 border-b text-right outline-none focus:border-blue-500 text-sm font-bold" value={order[field.key] || ''} 
-                              onChange={(e) => handleOrderChange(field.key, parseFloat(e.target.value))} 
-                              onBlur={(e) => saveOrder(field.key, parseFloat(e.target.value))}
+                            <input type="number" step="0.01" className="w-20 border-b text-right outline-none focus:border-blue-500 text-sm font-bold" value={order[field.key] ?? ''} 
+                              onChange={(e) => handleOrderChange(field.key, e.target.value)} 
+                              onBlur={(e) => saveOrder(field.key, e.target.value)}
                             />
                             <span className="text-xs text-gray-400">$</span>
                           </div>
