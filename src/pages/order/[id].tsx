@@ -142,7 +142,7 @@ export default function OrderDetails() {
         payment_3_rub: parseFloat(order.payment_3_rub) || 0,
         address_delivery: order.address_delivery || '',
         delivery_days: order.delivery_days || '',
-        status: 'calculation'
+        status: 'calculating'
       })
       .eq('id', id as string);
     
@@ -404,9 +404,9 @@ export default function OrderDetails() {
                   </button>
                 )}
 
-                {profile?.role === 'client' && order.status !== 'approved' && (
+                {profile?.role === 'client' && order.status !== 'pending_payment' && (
                   <button onClick={async () => {
-                    await supabase.from('orders').update({ status: 'approved' }).eq('id', id);
+                    await supabase.from('orders').update({ status: 'pending_payment' }).eq('id', id);
                     fetchAllData();
                   }} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold mt-6 shadow-lg shadow-green-100 hover:bg-green-600 transition-all">
                     СОГЛАСОВАТЬ РАСЧЕТ ✅
