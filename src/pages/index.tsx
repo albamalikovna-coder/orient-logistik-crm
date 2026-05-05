@@ -174,7 +174,7 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                        {order.total_amount_rub?.toLocaleString()} ₽
+                        {Math.round(order.total_amount_rub || 0).toLocaleString()} ₽
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button className="text-blue-600 hover:text-blue-900">Открыть</button>
@@ -182,49 +182,94 @@ export default function Dashboard() {
                     </tr>
 
                     {expandedOrders[order.id] && (
-                      <tr className="bg-gray-50">
-                        <td colSpan={6} className="px-12 py-4">
-                          <div className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-inner p-4">
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <div className="flex-1">
-                                <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Товары</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <tr className="bg-gray-50/50">
+                        <td colSpan={6} className="px-6 pb-6 pt-2">
+                          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden p-6 space-y-6">
+                            
+                            {/* Секция 1: Товары и Груз */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                              <div className="lg:col-span-2">
+                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Параметры груза</h4>
+                                <div className="space-y-3">
                                   {order.order_items?.map((item: any) => (
-                                    <div key={item.id} className="flex items-center gap-3 p-2 border rounded bg-white">
-                                      <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                                        {item.photo_url && <img src={item.photo_url} className="w-full h-full object-cover" alt={item.name_ru} />}
+                                    <div key={item.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl bg-gray-50/30">
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white border border-gray-100 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                                          {item.photo_url && <img src={item.photo_url} className="w-full h-full object-cover" alt={item.name_ru} />}
+                                        </div>
+                                        <div>
+                                          <div className="text-sm font-bold text-gray-800">{item.name_ru}</div>
+                                          <div className="text-[10px] text-gray-500 font-medium">
+                                            {item.hscode || 'ТН ВЭД не указан'} | {item.weight_kg || 0} кг | {item.volume_m3 || 0} м³
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="text-xs truncate">
-                                        <div className="font-bold truncate">{item.name_ru}</div>
-                                        <div className="text-gray-500">
-                                          {(item.actual_qty || item.total_qty)} шт. × {(item.actual_price_rmb || item.price_per_unit_rmb)} ¥
+                                      <div className="text-right">
+                                        <div className="text-xs font-bold text-blue-600">
+                                          {(item.actual_price_rmb || item.price_per_unit_rmb)} ¥ × {(item.actual_qty || item.total_qty)} шт.
                                         </div>
                                       </div>
                                     </div>
                                   ))}
                                 </div>
                               </div>
-                              
-                              {(order.status === 'calculating' || order.status === 'pending_payment') && (
-                                <div className="md:w-64 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                                  <h4 className="text-[10px] font-bold text-blue-400 uppercase mb-2">Логистика и расчет</h4>
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-xs">
-                                      <span className="text-gray-500">Логистика:</span>
+
+                              {/* Секция 2: Финансовый дашборд (Карточка из калькулятора) */}
+                              <div className="bg-blue-600 rounded-2xl p-5 text-white shadow-lg shadow-blue-100 flex flex-col justify-between">
+                                <div>
+                                  <h4 className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-4">Финансовый расчет</h4>
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
+                                      <span className="text-blue-100">Логистика:</span>
                                       <span className="font-bold">$ {order.logistic_cost_usd || 0}</span>
                                     </div>
-                                    <div className="flex justify-between text-xs">
-                                      <span className="text-gray-500">Банк:</span>
-                                      <span className="font-bold">$ {order.bank_fees_usd || 0}</span>
+                                    <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
+                                      <span className="text-blue-100">Банк и сервис:</span>
+                                      <span className="font-bold">$ {(parseFloat(order.bank_fees_usd || 0) + parseFloat(order.company_service_usd || 0)).toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between text-xs pt-2 border-t border-blue-100 mt-1">
-                                      <span className="text-blue-900 font-bold uppercase text-[10px]">Итого:</span>
-                                      <span className="text-blue-900 font-bold">{order.total_amount_rub?.toLocaleString()} ₽</span>
+                                    <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
+                                      <span className="text-blue-100">Доп. расходы:</span>
+                                      <span className="font-bold">$ {(parseFloat(order.certification_usd || 0) + parseFloat(order.labeling_usd || 0)).toFixed(2)}</span>
                                     </div>
                                   </div>
                                 </div>
-                              )}
+                                <div className="mt-6 pt-4 border-t border-blue-400/30">
+                                  <div className="text-[10px] text-blue-200 uppercase font-bold mb-1">Всего к оплате</div>
+                                  <div className="text-2xl font-black">{Math.round(order.total_amount_rub || 0).toLocaleString()} ₽</div>
+                                </div>
+                              </div>
                             </div>
+
+                            {/* Секция 3: Доставка и График платежей */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-gray-100">
+                              <div>
+                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Доставка и сроки</h4>
+                                <div className="flex items-center gap-3 text-sm">
+                                  <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">📍</div>
+                                  <div>
+                                    <div className="font-bold text-gray-800">{order.address_delivery || 'Адрес не указан'}</div>
+                                    <div className="text-xs text-gray-500">{order.delivery_days || 'Сроки уточняются'}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">График платежей</h4>
+                                <div className="flex gap-4">
+                                  {[
+                                    {label: '1-й', val: order.payment_1_rub},
+                                    {label: '2-й', val: order.payment_2_rub},
+                                    {label: '3-й', val: order.payment_3_rub}
+                                  ].map((p, i) => (
+                                    <div key={i} className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                      <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">{p.label} платеж</div>
+                                      <div className="text-xs font-black text-gray-800">{Math.round(p.val || 0).toLocaleString()} ₽</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
                           </div>
                         </td>
                       </tr>
