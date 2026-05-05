@@ -65,15 +65,18 @@ export default function OrderDetails() {
   };
 
   async function saveItem(itemId: string, field: string, value: any) {
+    if (!id) return;
     let safeValue = value;
     if (field !== 'hscode') {
       const num = parseFloat(value);
       safeValue = isNaN(num) ? 0 : num;
     }
-    await supabase.from('order_items').update({ [field]: safeValue }).eq('id', itemId);
+    const { error } = await supabase.from('order_items').update({ [field]: safeValue }).eq('id', itemId);
+    if (error) console.error('Error saving item:', error);
   }
 
   async function saveOrder(field: string, value: any) {
+    if (!id) return;
     let safeValue = value;
     const numericFields = [
       'logistic_cost_usd', 'bank_fees_usd', 'company_service_usd', 
@@ -86,7 +89,8 @@ export default function OrderDetails() {
       safeValue = isNaN(num) ? 0 : num;
     }
     
-    await supabase.from('orders').update({ [field]: safeValue }).eq('id', id);
+    const { error } = await supabase.from('orders').update({ [field]: safeValue }).eq('id', id as string);
+    if (error) console.error('Error saving order:', error);
   }
 
   async function addExtraCharge() {
@@ -108,27 +112,46 @@ export default function OrderDetails() {
   }
 
   async function recalculateTotal() {
+    if (!id || !order) return;
     setLoading(true);
+    
     // Считаем сумму товаров
     const itemsTotal = items.reduce((sum, item) => {
-      const price = (item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb;
-      const qty = (item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty;
-      return sum + (parseFloat(price) * parseFloat(qty));
+      const price = parseFloat((item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb) || 0;
+      const qty = parseFloat((item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty) || 0;
+      return sum + (price * qty);
     }, 0);
 
     const chargesTotal = extraCharges.reduce((sum, charge) => sum + (parseFloat(charge.amount_rmb) || 0), 0);
     const finalRmb = itemsTotal + chargesTotal;
+    const finalRub = finalRmb * (order.exchange_rate || rates.cny);
 
+    // Принудительно сохраняем все поля из текущего состояния order, чтобы ничего не потерялось
     const { error } = await supabase
       .from('orders')
       .update({
         total_amount_rmb: finalRmb,
-        total_amount_rub: finalRmb * order.exchange_rate,
+        total_amount_rub: finalRub,
+        logistic_cost_usd: parseFloat(order.logistic_cost_usd) || 0,
+        bank_fees_usd: parseFloat(order.bank_fees_usd) || 0,
+        company_service_usd: parseFloat(order.company_service_usd) || 0,
+        certification_usd: parseFloat(order.certification_usd) || 0,
+        labeling_usd: parseFloat(order.labeling_usd) || 0,
+        payment_1_rub: parseFloat(order.payment_1_rub) || 0,
+        payment_2_rub: parseFloat(order.payment_2_rub) || 0,
+        payment_3_rub: parseFloat(order.payment_3_rub) || 0,
+        address_delivery: order.address_delivery || '',
+        delivery_days: order.delivery_days || '',
         status: 'calculation'
       })
-      .eq('id', id);
+      .eq('id', id as string);
     
-    await fetchAllData();
+    if (error) {
+      alert('Ошибка при сохранении: ' + error.message);
+    } else {
+      await fetchAllData();
+      alert('Данные успешно сохранены!');
+    }
   }
 
   if (loading) return <div className="p-8 text-center text-blue-900 font-bold">Загрузка калькулятора...</div>;
