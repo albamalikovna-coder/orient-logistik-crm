@@ -35,9 +35,13 @@ export default function AdminUsers() {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .order('updated_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
-    if (!error) setUsers(data || []);
+    if (error) {
+      console.error('Fetch users error:', error);
+    } else {
+      setUsers(data || []);
+    }
     setLoading(false);
   }
 
