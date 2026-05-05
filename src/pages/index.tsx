@@ -4,14 +4,26 @@ import { useRouter } from 'next/router';
 
 export default function Dashboard() {
   const [orders, setOrders] = useState<any[]>([]);
+  const [exchangeRate, setExchangeRate] = useState('13.5');
   const [loading, setLoading] = useState(true);
+  const [savingRate, setSavingRate] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    fetchOrders();
+    fetchData();
   }, []);
 
-  async function fetchOrders() {
+  async function fetchData() {
+    // Получаем курс
+    const { data: rateData } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'exchange_rate')
+      .single();
+    
+    if (rateData) setExchangeRate(rateData.value);
+
+    // Получаем заказы
     const { data, error } = await supabase
       .from('orders')
       .select('*, profiles(full_name)')
@@ -22,17 +34,55 @@ export default function Dashboard() {
     setLoading(false);
   }
 
+  async function updateRate() {
+    setSavingRate(true);
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'exchange_rate', value: exchangeRate });
+    
+    if (error) alert('Ошибка при сохранении курса');
+    else alert('Курс обновлен!');
+    setSavingRate(false);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <header className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-blue-900">OrientLogistik</h1>
+      <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-blue-900">OrientLogistik</h1>
+          <p className="text-gray-500 text-sm">Система управления закупками</p>
+        </div>
+        
+        <div className="flex items-center gap-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+          <div className="text-right">
+            <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Курс RMB/RUB</p>
+            <div className="flex items-center gap-2">
+              <input 
+                type="number" step="0.1"
+                className="w-20 font-bold text-blue-600 text-lg border-b-2 border-transparent focus:border-blue-500 outline-none"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(e.target.value)}
+              />
+              <span className="text-gray-400">₽</span>
+            </div>
+          </div>
+          <button 
+            onClick={updateRate}
+            disabled={savingRate}
+            className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            {savingRate ? '...' : '💾'}
+          </button>
+        </div>
+
         <button 
           onClick={() => router.push('/create-order')}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          className="rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-100"
         >
           + Новая заявка
         </button>
       </header>
+
 
       <main>
         <div className="rounded-xl bg-white shadow-sm overflow-hidden">

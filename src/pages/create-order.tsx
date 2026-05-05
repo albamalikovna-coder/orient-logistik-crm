@@ -30,13 +30,23 @@ export default function CreateOrder() {
     setLoading(true);
 
     try {
+      // 0. Получаем актуальный курс из базы
+      const { data: rateData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'exchange_rate')
+        .single();
+      
+      const currentRate = rateData ? parseFloat(rateData.value) : 13.5;
+
       // 1. Создаем общую заявку
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert([{ 
           status: 'draft', 
           notes: orderNotes,
-          company_name: companyName 
+          company_name: companyName,
+          exchange_rate: currentRate
         }])
         .select()
         .single();
@@ -65,7 +75,10 @@ export default function CreateOrder() {
       const totalRmb = itemsToInsert.reduce((sum, item) => sum + item.total_price_rmb, 0);
       await supabase
         .from('orders')
-        .update({ total_amount_rmb: totalRmb, total_amount_rub: totalRmb * 13.5 })
+        .update({ 
+          total_amount_rmb: totalRmb, 
+          total_amount_rub: totalRmb * currentRate 
+        })
         .eq('id', order.id);
 
       router.push('/');
