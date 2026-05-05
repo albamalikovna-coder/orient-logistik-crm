@@ -83,15 +83,27 @@ export default function CreateOrder() {
         <h1 className="text-2xl font-bold text-blue-900 mb-6">Создание новой заявки</h1>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <label className="block text-sm font-medium text-blue-800">Общее примечание к заявке (например: "Груз в Москву")</label>
-            <input 
-              type="text"
-              className="mt-1 block w-full border border-blue-200 rounded-md p-2"
-              value={orderNotes}
-              onChange={e => setOrderNotes(e.target.value)}
-              placeholder="Укажите общую информацию для байера"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg">
+            <div>
+              <label className="block text-sm font-medium text-blue-800">Название организации / Клиент</label>
+              <input 
+                type="text" required
+                className="mt-1 block w-full border border-blue-200 rounded-md p-2"
+                value={companyName}
+                onChange={e => setCompanyName(e.target.value)}
+                placeholder="ООО 'Вектор' или Имя клиента"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-blue-800">Общее примечание</label>
+              <input 
+                type="text"
+                className="mt-1 block w-full border border-blue-200 rounded-md p-2"
+                value={orderNotes}
+                onChange={e => setOrderNotes(e.target.value)}
+                placeholder="Груз в Москву, СДЭК и т.д."
+              />
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -168,18 +180,6 @@ export default function CreateOrder() {
             </button>
             <button 
               type="submit" 
-              disabled={loading}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-bold shadow-lg shadow-blue-200"
-            >
-              {loading ? 'Сохранение...' : 'Создать заявку (' + items.length + ' поз.)'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-" 
               disabled={loading}
               className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-bold shadow-lg shadow-blue-200"
             >
