@@ -175,7 +175,11 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                        {Math.round(order.total_amount_rub || 0).toLocaleString()} ₽
+                        {Math.round(
+                          (parseFloat(order.payment_1_rub || 0) + 
+                           parseFloat(order.payment_2_rub || 0) + 
+                           parseFloat(order.payment_3_rub || 0)) || (order.total_amount_rub || 0)
+                        ).toLocaleString()} ₽
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button className="text-blue-600 hover:text-blue-900">Открыть</button>
@@ -231,6 +235,21 @@ export default function Dashboard() {
                                       </span>
                                     </div>
                                     <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
+                                      <span className="text-blue-100">Таможня (Пошлина+НДС):</span>
+                                      <span className="font-bold">
+                                        $ {(
+                                          (order.order_items?.reduce((sum: number, item: any) => {
+                                            const p = parseFloat(item.actual_price_rmb || item.price_per_unit_rmb) || 0;
+                                            const q = parseFloat(item.actual_qty || item.total_qty) || 0;
+                                            const cost = p * q;
+                                            const duty = cost * (parseFloat(item.duty_percent || 0) / 100);
+                                            const vat = (cost + duty) * 0.22;
+                                            return sum + duty + vat;
+                                          }, 0) / rates.cross)
+                                        ).toFixed(2)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
                                       <span className="text-blue-100">Логистика:</span>
                                       <span className="font-bold">$ {order.logistic_cost_usd || 0}</span>
                                     </div>
@@ -249,7 +268,13 @@ export default function Dashboard() {
                                 </div>
                                 <div className="mt-6 pt-4 border-t border-blue-400/30">
                                   <div className="text-[10px] text-blue-200 uppercase font-bold mb-1">Всего к оплате</div>
-                                  <div className="text-2xl font-black">{Math.round(order.total_amount_rub || 0).toLocaleString()} ₽</div>
+                                  <div className="text-2xl font-black">
+                                    {Math.round(
+                                      (parseFloat(order.payment_1_rub || 0) + 
+                                       parseFloat(order.payment_2_rub || 0) + 
+                                       parseFloat(order.payment_3_rub || 0)) || (order.total_amount_rub || 0)
+                                    ).toLocaleString()} ₽
+                                  </div>
                                 </div>
                               </div>
                             </div>
