@@ -26,13 +26,10 @@ export default function CreateOrder() {
     setItems(newItems);
   };
 
-  const handleFileUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadFile = async (index: number, file: File | Blob) => {
     setLoading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = (file as File).name?.split('.').pop() || 'png';
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `items/${fileName}`;
 
@@ -51,6 +48,27 @@ export default function CreateOrder() {
       alert('Ошибка загрузки фото');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(index, file);
+  };
+
+  const handlePaste = async (index: number, e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          await uploadFile(index, blob);
+          break;
+        }
+      }
     }
   };
 
@@ -151,18 +169,30 @@ export default function CreateOrder() {
 
           <div className="space-y-4">
             {items.map((item, index) => (
-              <div key={index} className="p-4 border border-gray-100 rounded-lg relative bg-gray-50 flex flex-col md:flex-row gap-6">
+              <div 
+                key={index} 
+                onPaste={(e) => handlePaste(index, e)}
+                className="p-4 border border-gray-100 rounded-lg relative bg-gray-50 flex flex-col md:flex-row gap-6 transition-all focus-within:ring-2 focus-within:ring-blue-100"
+              >
                 {items.length > 1 && (
                   <button type="button" onClick={() => removeItem(index)} className="absolute top-2 right-2 text-red-400">×</button>
                 )}
                 
-                <div 
-                  onClick={() => fileInputRefs.current[index]?.click()}
-                  className="w-full md:w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 cursor-pointer"
-                >
-                  {item.photo_url ? <img src={item.photo_url} className="w-full h-full object-contain" /> : <span className="text-xs text-gray-400">Фото</span>}
-                  <input type="file" className="hidden" ref={el => { fileInputRefs.current[index] = el; }} onChange={e => handleFileUpload(index, e)} />
-                </div>
+                 <div 
+                   onClick={() => fileInputRefs.current[index]?.click()}
+                   className="w-full md:w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors"
+                   title="Кликните для выбора или нажмите Ctrl+V для вставки"
+                 >
+                   {item.photo_url ? (
+                     <img src={item.photo_url} className="w-full h-full object-contain" />
+                   ) : (
+                     <div className="text-center">
+                       <span className="text-[10px] text-gray-400 font-bold block">ФОТО</span>
+                       <span className="text-[8px] text-gray-300 block mt-1">Ctrl + V</span>
+                     </div>
+                   )}
+                   <input type="file" className="hidden" ref={el => { fileInputRefs.current[index] = el; }} onChange={e => handleFileUpload(index, e)} />
+                 </div>
 
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="col-span-full">
