@@ -53,11 +53,11 @@ export default function OrderDetails() {
 
   // Локальное обновление состояния для мгновенного ввода
   const handleItemChange = (itemId: string, field: string, value: any) => {
-    setItems(prev => prev.map(item => item.id === itemId ? { ...item, [field]: value } : item));
+    setItems((prev: any[]) => prev.map(item => item.id === itemId ? { ...item, [field]: value } : item));
   };
 
   const handleOrderChange = (field: string, value: any) => {
-    setOrder(prev => ({ ...prev, [field]: value }));
+    setOrder((prev: any) => ({ ...prev, [field]: value }));
   };
 
   async function saveItem(itemId: string, field: string, value: any) {
