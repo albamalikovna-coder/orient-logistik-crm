@@ -40,10 +40,10 @@ export default function Dashboard() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Дата</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Организация</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Сумма (RMB)</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Итого (RUB)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -56,6 +56,9 @@ export default function Dashboard() {
                   <tr key={order.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/order/${order.id}`)}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(order.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {order.company_name || '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
