@@ -61,12 +61,13 @@ export default function OrderDetails() {
   };
 
   async function saveItem(itemId: string, field: string, value: any) {
-    await supabase.from('order_items').update({ [field]: value }).eq('id', itemId);
-    // Не вызываем fetchAllData сразу, чтобы не дергать сеть
+    const safeValue = (typeof value === 'number' && isNaN(value)) ? 0 : value;
+    await supabase.from('order_items').update({ [field]: safeValue }).eq('id', itemId);
   }
 
   async function saveOrder(field: string, value: any) {
-    await supabase.from('orders').update({ [field]: value }).eq('id', id);
+    const safeValue = (typeof value === 'number' && isNaN(value)) ? 0 : value;
+    await supabase.from('orders').update({ [field]: safeValue }).eq('id', id);
   }
 
   async function addExtraCharge() {
@@ -109,11 +110,6 @@ export default function OrderDetails() {
       .eq('id', id);
     
     await fetchAllData();
-  }
-
-  async function updateOrder(field: string, value: any) {
-    const { error } = await supabase.from('orders').update({ [field]: value }).eq('id', id);
-    if (!error) fetchAllData();
   }
 
   if (loading) return <div className="p-8 text-center text-blue-900 font-bold">Загрузка калькулятора...</div>;
