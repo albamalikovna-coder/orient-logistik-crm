@@ -155,25 +155,25 @@ export default function OrderDetails() {
     const finalRub = totalUsd * rates.usd; // Умножаем USD на курс Доллара!
 
     // Сохраняем все поля
+    const updateData: any = {
+      total_amount_rmb: totalUsd * rates.cross,
+      total_amount_rub: finalRub,
+      logistic_cost_usd: logisticUsd,
+      bank_fees_usd: bankUsd,
+      company_service_usd: serviceUsd,
+      certification_usd: certUsd,
+      labeling_usd: labelUsd,
+      payment_1_rub: parseFloat(order.payment_1_rub) || 0,
+      payment_2_rub: parseFloat(order.payment_2_rub) || 0,
+      payment_3_rub: parseFloat(order.payment_3_rub) || 0,
+      address_delivery: order.address_delivery || '',
+      delivery_days: order.delivery_days || '',
+      status: 'calculating'
+    };
+
     const { error } = await supabase
       .from('orders')
-      .update({
-        total_amount_rmb: totalUsd * (rates.usd / rates.cny), 
-        total_amount_rub: finalRub,
-        exchange_rate: rates.cny,
-        exchange_rate_usd: rates.usd, // Добавляем сохранение курса доллара
-        logistic_cost_usd: logisticUsd,
-        bank_fees_usd: bankUsd,
-        company_service_usd: serviceUsd,
-        certification_usd: certUsd,
-        labeling_usd: labelUsd,
-        payment_1_rub: parseFloat(order.payment_1_rub) || 0,
-        payment_2_rub: parseFloat(order.payment_2_rub) || 0,
-        payment_3_rub: parseFloat(order.payment_3_rub) || 0,
-        address_delivery: order.address_delivery || '',
-        delivery_days: order.delivery_days || '',
-        status: 'calculating'
-      })
+      .update(updateData)
       .eq('id', id as string);
     
     if (error) {

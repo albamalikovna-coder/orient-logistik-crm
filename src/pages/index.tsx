@@ -4,12 +4,20 @@ import { useRouter } from 'next/router';
 
 export default function Dashboard() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [userProfile, setUserProfile] = useState<any>(null);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
-  const [exchangeRate, setExchangeRate] = useState('13.5');
-  const [loading, setLoading] = useState(true);
-  const [savingRate, setSavingRate] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [rates, setRates] = useState({ usd: 75.44, cny: 11.03, cross: 6.84 });
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('https://www.cbr-xml-daily.ru/daily_json.js')
+      .then(res => res.json())
+      .then(data => {
+        const usd = data.Valute.USD.Value;
+        const cny = data.Valute.CNY.Value;
+        setRates({ usd, cny, cross: usd / cny });
+      }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     checkUserAndFetch();
@@ -220,16 +228,13 @@ export default function Dashboard() {
                                   <h4 className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-4">Финансовый расчет</h4>
                                   <div className="space-y-2">
                                     <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
-                                      <span className="text-blue-100">Товары (Invoice + Таможня):</span>
+                                      <span className="text-blue-100">Товары (Invoice):</span>
                                       <span className="font-bold">
-                                        $ {Math.max(0, (
-                                          (order.total_amount_rub / (order.exchange_rate_usd || 75.44)) - 
-                                          (parseFloat(order.logistic_cost_usd || 0) + 
-                                           parseFloat(order.bank_fees_usd || 0) + 
-                                           parseFloat(order.company_service_usd || 0) + 
-                                           parseFloat(order.certification_usd || 0) + 
-                                           parseFloat(order.labeling_usd || 0))
-                                        )).toFixed(2)}
+                                        $ {(order.order_items?.reduce((sum: number, item: any) => {
+                                          const p = parseFloat(item.actual_price_rmb || item.price_per_unit_rmb) || 0;
+                                          const q = parseFloat(item.actual_qty || item.total_qty) || 0;
+                                          return sum + (p * q);
+                                        }, 0) / rates.cross).toFixed(2)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
