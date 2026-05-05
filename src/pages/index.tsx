@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/router';
-import React from 'react';
 
 export default function Dashboard() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -17,42 +16,68 @@ export default function Dashboard() {
   }, []);
 
   async function checkUserAndFetch() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    setLoading(true);
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.log('Auth error or no user:', authError);
+        router.push('/login');
+        return;
+      }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    
-    setUserProfile(profile);
-    fetchData(profile);
+      // Получаем профиль
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        // Если профиля нет (триггер не успел сработать), создаем временный объект
+        const fallbackProfile = { id: user.id, role: 'client', full_name: user.email };
+        setUserProfile(fallbackProfile);
+        fetchData(fallbackProfile);
+      } else {
+        setUserProfile(profile);
+        fetchData(profile);
+      }
+    } catch (err) {
+      console.error('General error in checkUser:', err);
+      setLoading(false);
+    }
   }
 
   async function fetchData(profile: any) {
-    // Получаем курс
-    const { data: rateData } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'exchange_rate')
-      .single();
-    if (rateData) setExchangeRate(rateData.value);
+    try {
+      // Получаем курс
+      const { data: rateData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'exchange_rate')
+        .single();
+      if (rateData) setExchangeRate(rateData.value);
 
-    // Запрос заказов с учетом роли
-    let query = supabase.from('orders').select('*, order_items(*)');
-    
-    if (profile.role === 'client') {
-      query = query.eq('client_id', profile.id);
+      // Запрос заказов
+      let query = supabase.from('orders').select('*, order_items(*)');
+      
+      if (profile && profile.role === 'client') {
+        query = query.eq('client_id', profile.id);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Orders fetch error:', error);
+      } else {
+        setOrders(data || []);
+      }
+    } catch (err) {
+      console.error('Data fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (!error) setOrders(data || []);
-    setLoading(false);
   }
 
   const toggleOrder = (orderId: string, e: React.MouseEvent) => {
@@ -71,9 +96,9 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold text-blue-900">OrientLogistik</h1>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-gray-500 text-sm">{userProfile?.full_name}</span>
+            <span className="text-gray-500 text-sm">{userProfile?.full_name || userProfile?.id?.substring(0,8)}</span>
             <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
-              {userProfile?.role}
+              {userProfile?.role || 'user'}
             </span>
           </div>
         </div>
@@ -84,25 +109,8 @@ export default function Dashboard() {
               onClick={() => router.push('/admin/users')}
               className="text-sm font-bold text-blue-600 hover:underline"
             >
-              Управление пользователями
+              Пользователи
             </button>
-          )}
-
-          {(userProfile?.role === 'admin' || userProfile?.role === 'ispolnitel') && (
-            <div className="flex items-center gap-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-              <div className="text-right">
-                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Курс RMB/RUB</p>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="number" step="0.1"
-                    className="w-16 font-bold text-blue-600 text-sm outline-none"
-                    value={exchangeRate}
-                    onChange={(e) => setExchangeRate(e.target.value)}
-                  />
-                  <span className="text-gray-400">₽</span>
-                </div>
-              </div>
-            </div>
           )}
 
           <button 
@@ -112,7 +120,7 @@ export default function Dashboard() {
             + Новая заявка
           </button>
           
-          <button onClick={handleLogout} className="text-gray-400 hover:text-red-500">
+          <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 text-sm">
             Выйти
           </button>
         </div>
@@ -174,14 +182,14 @@ export default function Dashboard() {
                       <tr className="bg-gray-50">
                         <td colSpan={6} className="px-12 py-4">
                           <div className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-inner p-4">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               {order.order_items?.map((item: any) => (
-                                <div key={item.id} className="flex items-center gap-3 p-2 border rounded">
-                                  <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden">
+                                <div key={item.id} className="flex items-center gap-3 p-2 border rounded bg-white">
+                                  <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                                     {item.photo_url && <img src={item.photo_url} className="w-full h-full object-cover" />}
                                   </div>
                                   <div className="text-xs truncate">
-                                    <div className="font-bold">{item.name_ru}</div>
+                                    <div className="font-bold truncate">{item.name_ru}</div>
                                     <div className="text-gray-500">{item.actual_qty || item.total_qty} шт.</div>
                                   </div>
                                 </div>
