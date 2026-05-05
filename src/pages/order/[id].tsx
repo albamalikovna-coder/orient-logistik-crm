@@ -115,28 +115,56 @@ export default function OrderDetails() {
     if (!id || !order) return;
     setLoading(true);
     
-    // Считаем сумму товаров
-    const itemsTotal = items.reduce((sum, item) => {
+    // 1. Считаем инвойс (товары)
+    const itemsTotalRmb = items.reduce((sum, item) => {
       const price = parseFloat((item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb) || 0;
       const qty = parseFloat((item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty) || 0;
       return sum + (price * qty);
     }, 0);
+    const itemsTotalUsd = itemsTotalRmb / rates.cross;
 
-    const chargesTotal = extraCharges.reduce((sum, charge) => sum + (parseFloat(charge.amount_rmb) || 0), 0);
-    const finalRmb = itemsTotal + chargesTotal;
-    const finalRub = finalRmb * (order.exchange_rate || rates.cny);
+    // 2. Считаем таможню (Пошлина + НДС)
+    const dutyRmb = items.reduce((sum, item) => {
+      const price = parseFloat((item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb) || 0;
+      const qty = parseFloat((item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty) || 0;
+      const cost = price * qty;
+      return sum + (cost * (parseFloat(item.duty_percent) || 0) / 100);
+    }, 0);
+    const vatRmb = items.reduce((sum, item) => {
+      const price = parseFloat((item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb) || 0;
+      const qty = parseFloat((item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty) || 0;
+      const cost = price * qty;
+      const duty = cost * (parseFloat(item.duty_percent) || 0) / 100;
+      return sum + ((cost + duty) * 0.22);
+    }, 0);
+    const customsUsd = (dutyRmb + vatRmb) / rates.cross;
 
-    // Принудительно сохраняем все поля из текущего состояния order, чтобы ничего не потерялось
+    // 3. Собираем все расходы в USD
+    const logisticUsd = parseFloat(order.logistic_cost_usd) || 0;
+    const bankUsd = parseFloat(order.bank_fees_usd) || 0;
+    const serviceUsd = parseFloat(order.company_service_usd) || 0;
+    const certUsd = parseFloat(order.certification_usd) || 0;
+    const labelUsd = parseFloat(order.labeling_usd) || 0;
+
+    // 4. Доп. расходы из отдельной таблицы (если есть)
+    const chargesTotalRmb = extraCharges.reduce((sum, charge) => sum + (parseFloat(charge.amount_rmb) || 0), 0);
+    const chargesTotalUsd = chargesTotalRmb / rates.cross;
+
+    // ФИНАЛЬНЫЙ ИТОГ
+    const totalUsd = itemsTotalUsd + customsUsd + logisticUsd + bankUsd + serviceUsd + certUsd + labelUsd + chargesTotalUsd;
+    const finalRub = totalUsd * (order.exchange_rate || rates.cny);
+
+    // Сохраняем все поля
     const { error } = await supabase
       .from('orders')
       .update({
-        total_amount_rmb: finalRmb,
+        total_amount_rmb: totalUsd * rates.cross, // Сохраняем общую сумму в RMB для истории
         total_amount_rub: finalRub,
-        logistic_cost_usd: parseFloat(order.logistic_cost_usd) || 0,
-        bank_fees_usd: parseFloat(order.bank_fees_usd) || 0,
-        company_service_usd: parseFloat(order.company_service_usd) || 0,
-        certification_usd: parseFloat(order.certification_usd) || 0,
-        labeling_usd: parseFloat(order.labeling_usd) || 0,
+        logistic_cost_usd: logisticUsd,
+        bank_fees_usd: bankUsd,
+        company_service_usd: serviceUsd,
+        certification_usd: certUsd,
+        labeling_usd: labelUsd,
         payment_1_rub: parseFloat(order.payment_1_rub) || 0,
         payment_2_rub: parseFloat(order.payment_2_rub) || 0,
         payment_3_rub: parseFloat(order.payment_3_rub) || 0,
@@ -150,7 +178,7 @@ export default function OrderDetails() {
       alert('Ошибка при сохранении: ' + error.message);
     } else {
       await fetchAllData();
-      alert('Данные успешно сохранены!');
+      alert('Данные успешно сохранены! Итого: ' + Math.round(finalRub).toLocaleString() + ' ₽');
     }
   }
 
