@@ -58,6 +58,7 @@ export default function CreateOrder() {
         order_id: order.id,
         name_ru: item.name_ru,
         link: item.link,
+        photo_url: item.photo_url,
         description: item.description,
         price_per_unit_rmb: parseFloat(item.price_per_unit_rmb) || 0,
         total_qty: parseInt(item.total_qty) || 0,
@@ -169,6 +170,47 @@ export default function CreateOrder() {
                       value={item.link}
                       onChange={e => updateItem(index, 'link', e.target.value)}
                     />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button 
+            type="button"
+            onClick={addItem}
+            className="w-full border-2 border-dashed border-blue-300 text-blue-600 py-3 rounded-lg hover:bg-blue-50 font-medium transition-colors"
+          >
+            + Добавить еще один товар в эту заявку
+          </button>
+
+          <div className="pt-6 flex gap-4 border-t border-gray-100">
+            <button 
+              type="button" 
+              onClick={() => router.push('/')}
+              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 font-bold"
+            >
+              Отмена
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-bold shadow-lg shadow-blue-200"
+            >
+              {loading ? 'Сохранение...' : 'Создать заявку (' + items.length + ' поз.)'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+ue-300 rounded-md p-2 text-sm"
+                        value={item.photo_url}
+                        onChange={e => updateItem(index, 'photo_url', e.target.value)}
+                        placeholder="Вставьте прямую ссылку на картинку"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

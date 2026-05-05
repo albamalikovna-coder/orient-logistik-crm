@@ -67,6 +67,7 @@ export default function OrderDetails() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Фото</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Товар</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Цена (¥)</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Кол-во</th>
@@ -77,6 +78,15 @@ export default function OrderDetails() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {items.map((item) => (
                     <tr key={item.id}>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="h-16 w-16 flex-shrink-0">
+                          {item.photo_url ? (
+                            <img src={item.photo_url} alt="" className="h-16 w-16 rounded-md object-cover border border-gray-200" />
+                          ) : (
+                            <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center text-[10px] text-gray-400">Нет фото</div>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-4 text-sm text-gray-900 font-medium">{item.name_ru}</td>
                       <td className="px-4 py-4 text-sm text-gray-500">{item.price_per_unit_rmb} ¥</td>
                       <td className="px-4 py-4 text-sm text-gray-500">{item.total_qty} шт</td>
