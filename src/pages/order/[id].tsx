@@ -100,6 +100,7 @@ export default function OrderDetails() {
             <span>←</span> Список заказов
           </button>
           <div className="flex gap-4 items-center">
+             <div className="text-[10px] text-blue-400 font-bold bg-blue-50 px-2 py-1 rounded">V2.0 LOGISTIC PRO</div>
              <div className="text-xs text-gray-400">Курс ЦБ: 1$ = {rates.usd.toFixed(2)}₽ | 1¥ = {rates.cny.toFixed(2)}₽</div>
              <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">{order.status}</span>
           </div>
