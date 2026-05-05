@@ -89,11 +89,6 @@ export default function OrderDetails() {
     await supabase.from('orders').update({ [field]: safeValue }).eq('id', id);
   }
 
-  async function saveOrder(field: string, value: any) {
-    const safeValue = (typeof value === 'number' && isNaN(value)) ? 0 : value;
-    await supabase.from('orders').update({ [field]: safeValue }).eq('id', id);
-  }
-
   async function addExtraCharge() {
     if (!newCharge.name || !newCharge.amount_rmb) return;
     const rmb = parseFloat(newCharge.amount_rmb);
