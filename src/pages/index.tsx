@@ -34,6 +34,23 @@ export default function Dashboard() {
     setLoading(false);
   }
 
+  async function updateRate() {
+    try {
+      setSavingRate(true);
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ key: 'exchange_rate', value: exchangeRate.toString() });
+      
+      if (error) throw error;
+      alert('Курс обновлен и сохранен!');
+    } catch (error) {
+      alert('Ошибка при сохранении курса');
+      console.error(error);
+    } finally {
+      setSavingRate(false);
+    }
+  }
+
   async function fetchCbrRate() {
     try {
       setSavingRate(true);
