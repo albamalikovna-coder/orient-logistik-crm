@@ -5,7 +5,8 @@ import { useRouter } from 'next/router';
 export default function Dashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
-  const [profile, setProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState({ usd: 75.44, cny: 11.03, cross: 6.84 });
   const router = useRouter();
 
@@ -59,14 +60,6 @@ export default function Dashboard() {
 
   async function fetchData(profile: any) {
     try {
-      // Получаем курс
-      const { data: rateData } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'exchange_rate')
-        .single();
-      if (rateData) setExchangeRate(rateData.value);
-
       // Запрос заказов
       let query = supabase.from('orders').select('*, order_items(*)');
       
