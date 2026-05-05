@@ -8,11 +8,11 @@ export default function CreateOrder() {
   const [companyName, setCompanyName] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [items, setItems] = useState([
-    { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', description: '' }
+    { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', photo_url: '', description: '' }
   ]);
 
   const addItem = () => {
-    setItems([...items, { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', description: '' }]);
+    setItems([...items, { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', photo_url: '', description: '' }]);
   };
 
   const removeItem = (index: number) => {
@@ -93,7 +93,7 @@ export default function CreateOrder() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm p-6 md:p-8">
+      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-sm p-6 md:p-8">
         <h1 className="text-2xl font-bold text-blue-900 mb-6">Создание новой заявки</h1>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -134,82 +134,65 @@ export default function CreateOrder() {
                   </button>
                 )}
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="col-span-full">
-                    <label className="block text-sm font-medium text-gray-700">Название товара (RU)</label>
-                    <input 
-                      type="text" required
-                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                      value={item.name_ru}
-                      onChange={e => updateItem(index, 'name_ru', e.target.value)}
-                    />
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Photo Preview Section */}
+                  <div className="w-full md:w-48 h-48 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
+                    {item.photo_url ? (
+                      <img src={item.photo_url} alt="Превью" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="text-gray-400 text-sm text-center px-2">Нет фото</span>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Цена за ед. (¥ RMB)</label>
-                    <input 
-                      type="number" step="0.01" required
-                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                      value={item.price_per_unit_rmb}
-                      onChange={e => updateItem(index, 'price_per_unit_rmb', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Количество (шт)</label>
-                    <input 
-                      type="number" required
-                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                      value={item.total_qty}
-                      onChange={e => updateItem(index, 'total_qty', e.target.value)}
-                    />
-                  </div>
-                  <div className="col-span-full">
-                    <label className="block text-sm font-medium text-gray-700">Ссылка на товар</label>
-                    <input 
-                      type="url"
-                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                      value={item.link}
-                      onChange={e => updateItem(index, 'link', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
 
-          <button 
-            type="button"
-            onClick={addItem}
-            className="w-full border-2 border-dashed border-blue-300 text-blue-600 py-3 rounded-lg hover:bg-blue-50 font-medium transition-colors"
-          >
-            + Добавить еще один товар в эту заявку
-          </button>
-
-          <div className="pt-6 flex gap-4 border-t border-gray-100">
-            <button 
-              type="button" 
-              onClick={() => router.push('/')}
-              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 font-bold"
-            >
-              Отмена
-            </button>
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-bold shadow-lg shadow-blue-200"
-            >
-              {loading ? 'Сохранение...' : 'Создать заявку (' + items.length + ' поз.)'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-ue-300 rounded-md p-2 text-sm"
-                        value={item.photo_url}
-                        onChange={e => updateItem(index, 'photo_url', e.target.value)}
-                        placeholder="Вставьте прямую ссылку на картинку"
-                      />
+                  {/* Fields Section */}
+                  <div className="flex-1 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="col-span-full">
+                        <label className="block text-sm font-medium text-gray-700">Название товара (RU)</label>
+                        <input 
+                          type="text" required
+                          className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                          value={item.name_ru}
+                          onChange={e => updateItem(index, 'name_ru', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Цена за ед. (¥ RMB)</label>
+                        <input 
+                          type="number" step="0.01" required
+                          className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                          value={item.price_per_unit_rmb}
+                          onChange={e => updateItem(index, 'price_per_unit_rmb', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Количество (шт)</label>
+                        <input 
+                          type="number" required
+                          className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                          value={item.total_qty}
+                          onChange={e => updateItem(index, 'total_qty', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-full">
+                        <label className="block text-sm font-medium text-blue-700 font-bold">Ссылка на фото товара</label>
+                        <input 
+                          type="text"
+                          className="mt-1 block w-full border border-blue-300 rounded-md p-2 text-sm"
+                          value={item.photo_url}
+                          onChange={e => updateItem(index, 'photo_url', e.target.value)}
+                          placeholder="Вставьте прямую ссылку на картинку (.jpg, .png)"
+                        />
+                      </div>
+                      <div className="col-span-full">
+                        <label className="block text-sm font-medium text-gray-700">Ссылка на товар</label>
+                        <input 
+                          type="url"
+                          className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                          value={item.link}
+                          onChange={e => updateItem(index, 'link', e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
