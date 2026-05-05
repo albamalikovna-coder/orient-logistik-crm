@@ -48,20 +48,10 @@ export default function CreateOrder() {
 
       updateItem(index, 'photo_url', data.publicUrl);
     } catch (error) {
-      alert('Ошибка загрузки. Убедитесь, что в Supabase создан бакет "product-images" с публичным доступом.');
-      console.error(error);
+      alert('Ошибка загрузки фото');
     } finally {
       setLoading(false);
     }
-  };
-
-  const openSearch = (link: string) => {
-    if (!link) {
-      alert('Сначала вставьте ссылку на товар');
-      return;
-    }
-    // Открываем поиск картинок Google по этой ссылке (или саму ссылку)
-    window.open(link, '_blank');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,6 +59,9 @@ export default function CreateOrder() {
     setLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Пользователь не авторизован');
+
       const { data: rateData } = await supabase
         .from('settings')
         .select('value')
@@ -83,7 +76,8 @@ export default function CreateOrder() {
           status: 'draft', 
           notes: orderNotes,
           company_name: companyName,
-          exchange_rate: currentRate
+          exchange_rate: currentRate,
+          client_id: user.id
         }])
         .select()
         .single();
@@ -117,9 +111,8 @@ export default function CreateOrder() {
         .eq('id', order.id);
 
       router.push('/');
-    } catch (error) {
-      alert('Ошибка при создании заявки');
-      console.error(error);
+    } catch (error: any) {
+      alert(error.message);
     } finally {
       setLoading(false);
     }
@@ -127,19 +120,22 @@ export default function CreateOrder() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-sm p-6 md:p-8">
-        <h1 className="text-2xl font-bold text-blue-900 mb-6">Создание новой заявки</h1>
+      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-sm p-6 md:p-8 border border-gray-100">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-blue-900">Создание новой заявки</h1>
+          <button onClick={() => router.push('/')} className="text-gray-400 hover:text-blue-600">Отмена</button>
+        </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg">
             <div>
-              <label className="block text-sm font-medium text-blue-800">Название организации / Клиент</label>
+              <label className="block text-sm font-medium text-blue-800">Организация / Клиент</label>
               <input 
                 type="text" required
                 className="mt-1 block w-full border border-blue-200 rounded-md p-2"
                 value={companyName}
                 onChange={e => setCompanyName(e.target.value)}
-                placeholder="ООО 'Вектор' или Имя клиента"
+                placeholder="ООО 'Вектор'"
               />
             </div>
             <div>
@@ -149,128 +145,52 @@ export default function CreateOrder() {
                 className="mt-1 block w-full border border-blue-200 rounded-md p-2"
                 value={orderNotes}
                 onChange={e => setOrderNotes(e.target.value)}
-                placeholder="Груз в Москву, СДЭК и т.д."
               />
             </div>
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-700">Товары в заявке</h2>
             {items.map((item, index) => (
-              <div key={index} className="p-4 border border-gray-200 rounded-lg relative bg-gray-50">
+              <div key={index} className="p-4 border border-gray-100 rounded-lg relative bg-gray-50 flex flex-col md:flex-row gap-6">
                 {items.length > 1 && (
-                  <button 
-                    type="button"
-                    onClick={() => removeItem(index)}
-                    className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm font-bold"
-                  >
-                    Удалить позицию ×
-                  </button>
+                  <button type="button" onClick={() => removeItem(index)} className="absolute top-2 right-2 text-red-400">×</button>
                 )}
                 
-                <div className="flex flex-col md:flex-row gap-6">
-                  {/* Photo Upload Section */}
-                  <div 
-                    onClick={() => fileInputRefs.current[index]?.click()}
-                    className="w-full md:w-48 h-48 bg-gray-200 rounded-lg flex flex-col items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-300 transition-colors"
-                  >
-                    {item.photo_url ? (
-                      <img src={item.photo_url} alt="Превью" className="w-full h-full object-contain" />
-                    ) : (
-                      <>
-                        <span className="text-3xl mb-2">📸</span>
-                        <span className="text-gray-500 text-xs text-center px-2">Нажмите, чтобы загрузить фото</span>
-                      </>
-                    )}
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      className="hidden"
-                      ref={el => { fileInputRefs.current[index] = el; }}
-                      onChange={e => handleFileUpload(index, e)}
-                    />
-                  </div>
+                <div 
+                  onClick={() => fileInputRefs.current[index]?.click()}
+                  className="w-full md:w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 cursor-pointer"
+                >
+                  {item.photo_url ? <img src={item.photo_url} className="w-full h-full object-contain" /> : <span className="text-xs text-gray-400">Фото</span>}
+                  <input type="file" className="hidden" ref={el => { fileInputRefs.current[index] = el; }} onChange={e => handleFileUpload(index, e)} />
+                </div>
 
-                  {/* Fields Section */}
-                  <div className="flex-1 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="col-span-full">
-                        <label className="block text-sm font-medium text-gray-700">Название товара (RU)</label>
-                        <input 
-                          type="text" required
-                          className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                          value={item.name_ru}
-                          onChange={e => updateItem(index, 'name_ru', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Цена за ед. (¥ RMB)</label>
-                        <input 
-                          type="number" step="0.01" required
-                          className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                          value={item.price_per_unit_rmb}
-                          onChange={e => updateItem(index, 'price_per_unit_rmb', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Количество (шт)</label>
-                        <input 
-                          type="number" required
-                          className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                          value={item.total_qty}
-                          onChange={e => updateItem(index, 'total_qty', e.target.value)}
-                        />
-                      </div>
-                      <div className="col-span-full">
-                        <div className="flex justify-between items-end mb-1">
-                          <label className="block text-sm font-medium text-gray-700">Ссылка на товар</label>
-                          <button 
-                            type="button"
-                            onClick={() => openSearch(item.link)}
-                            className="text-xs text-blue-600 hover:underline"
-                          >
-                            Открыть ссылку для поиска фото →
-                          </button>
-                        </div>
-                        <input 
-                          type="url"
-                          className="block w-full border border-gray-300 rounded-md p-2"
-                          value={item.link}
-                          onChange={e => updateItem(index, 'link', e.target.value)}
-                          placeholder="https://detail.1688.com/..."
-                        />
-                      </div>
-                    </div>
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="col-span-full">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Название товара (RU)</label>
+                    <input type="text" required className="w-full border-b border-gray-300 bg-transparent py-1 outline-none focus:border-blue-500" value={item.name_ru} onChange={e => updateItem(index, 'name_ru', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Цена (¥ RMB)</label>
+                    <input type="number" step="0.01" required className="w-full border-b border-gray-300 bg-transparent py-1 outline-none focus:border-blue-500" value={item.price_per_unit_rmb} onChange={e => updateItem(index, 'price_per_unit_rmb', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Кол-во (шт)</label>
+                    <input type="number" required className="w-full border-b border-gray-300 bg-transparent py-1 outline-none focus:border-blue-500" value={item.total_qty} onChange={e => updateItem(index, 'total_qty', e.target.value)} />
+                  </div>
+                  <div className="col-span-full">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Ссылка</label>
+                    <input type="url" className="w-full border-b border-gray-300 bg-transparent py-1 outline-none focus:border-blue-500" value={item.link} onChange={e => updateItem(index, 'link', e.target.value)} />
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <button 
-            type="button"
-            onClick={addItem}
-            className="w-full border-2 border-dashed border-blue-300 text-blue-600 py-3 rounded-lg hover:bg-blue-50 font-medium transition-colors"
-          >
-            + Добавить еще один товар в эту заявку
-          </button>
+          <button type="button" onClick={addItem} className="w-full py-3 border-2 border-dashed border-gray-200 text-gray-400 rounded-xl hover:bg-gray-50">+ Добавить позицию</button>
 
-          <div className="pt-6 flex gap-4 border-t border-gray-100">
-            <button 
-              type="button" 
-              onClick={() => router.push('/')}
-              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 font-bold"
-            >
-              Отмена
-            </button>
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-bold shadow-lg shadow-blue-200"
-            >
-              {loading ? 'Обработка...' : 'Создать заявку (' + items.length + ' поз.)'}
-            </button>
-          </div>
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-100">
+            {loading ? 'Сохранение...' : 'Создать заявку'}
+          </button>
         </form>
       </div>
     </div>
