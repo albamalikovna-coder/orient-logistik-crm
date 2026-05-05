@@ -53,7 +53,12 @@ export default function Dashboard() {
                 <tr><td colSpan={5} className="px-6 py-4 text-center text-gray-500">Заказов пока нет</td></tr>
               ) : (
                 orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/order/${order.id}`)}>
+                  <tr 
+                    key={order.id} 
+                    className="hover:bg-gray-50 cursor-pointer" 
+                    onClick={() => router.push(`/order/${order.id}`)}
+                  >
+
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(order.created_at).toLocaleDateString()}
                     </td>
