@@ -187,56 +187,76 @@ export default function Dashboard() {
                     </tr>
 
                     {expandedOrders[order.id] && (
-                      <tr className="bg-gray-50/50">
-                        <td colSpan={6} className="px-6 pb-6 pt-2">
-                          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden p-6 space-y-6">
+                      <tr className="bg-gray-50/30">
+                        <td colSpan={6} className="px-6 pb-8 pt-2">
+                          <div className="bg-white border border-gray-100 rounded-[24px] shadow-xl shadow-gray-200/50 overflow-hidden p-8 space-y-8">
                             
-                            {/* Секция 1: Товары и Груз */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                              <div className="lg:col-span-2">
-                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Параметры груза</h4>
-                                <div className="space-y-3">
-                                  {order.order_items?.map((item: any) => (
-                                    <div key={item.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl bg-gray-50/30">
-                                      <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-white border border-gray-100 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
-                                          {item.photo_url && <img src={item.photo_url} className="w-full h-full object-cover" alt={item.name_ru} />}
+                            <div className="flex flex-col lg:flex-row gap-8">
+                              {/* Левая часть: Параметры груза и Доставка */}
+                              <div className="flex-1 space-y-6">
+                                {/* Параметры груза */}
+                                <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100">
+                                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Параметры груза</h4>
+                                  <div className="space-y-4">
+                                    {order.order_items?.map((item: any) => (
+                                      <div key={item.id} className="flex items-center justify-between p-4 bg-white border border-gray-50 rounded-2xl shadow-sm">
+                                        <div className="flex items-center gap-5">
+                                          <div className="w-14 h-14 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
+                                            {item.photo_url && <img src={item.photo_url} className="w-full h-full object-cover" alt={item.name_ru} />}
+                                          </div>
+                                          <div>
+                                            <div className="text-sm font-black text-gray-800">{item.name_ru}</div>
+                                            <div className="text-[10px] text-gray-400 font-bold mt-1">
+                                              {item.hscode || '80000'} | {item.weight_kg || 0} кг | {item.volume_m3 || 0} м³
+                                            </div>
+                                          </div>
                                         </div>
-                                        <div>
-                                          <div className="text-sm font-bold text-gray-800">{item.name_ru}</div>
-                                          <div className="text-[10px] text-gray-500 font-medium">
-                                            {item.hscode || 'ТН ВЭД не указан'} | {item.weight_kg || 0} кг | {item.volume_m3 || 0} м³
+                                        <div className="text-right">
+                                          <div className="text-xs font-black text-gray-400">
+                                            <span className="text-blue-600">{(item.actual_price_rmb || item.price_per_unit_rmb)} ¥</span> × {(item.actual_qty || item.total_qty)} шт.
                                           </div>
                                         </div>
                                       </div>
-                                      <div className="text-right">
-                                        <div className="text-xs font-bold text-blue-600">
-                                          {(item.actual_price_rmb || item.price_per_unit_rmb)} ¥ × {(item.actual_qty || item.total_qty)} шт.
-                                        </div>
-                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Доставка */}
+                                <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100">
+                                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Доставка и сроки</h4>
+                                  <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-gray-50 flex items-center justify-center text-xl">📍</div>
+                                    <div>
+                                      <div className="font-black text-gray-800 text-sm">{order.address_delivery || 'Адрес уточняется'}</div>
+                                      <div className="text-xs text-gray-400 font-bold mt-0.5">{order.delivery_days || 'Сроки уточняются'}</div>
                                     </div>
-                                  ))}
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Секция 2: Финансовый дашборд (Карточка из калькулятора) */}
-                              <div className="bg-blue-600 rounded-2xl p-5 text-white shadow-lg shadow-blue-100 flex flex-col justify-between">
-                                <div>
-                                  <h4 className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-4">Финансовый расчет</h4>
-                                  <div className="space-y-2">
-                                    <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
-                                      <span className="text-blue-100">Товары (Invoice):</span>
-                                      <span className="font-bold">
-                                        $ {(order.order_items?.reduce((sum: number, item: any) => {
-                                          const p = parseFloat(item.actual_price_rmb || item.price_per_unit_rmb) || 0;
-                                          const q = parseFloat(item.actual_qty || item.total_qty) || 0;
-                                          return sum + (p * q);
-                                        }, 0) / rates.cross).toFixed(2)}
-                                      </span>
+                              {/* Правая часть: Финансовый блок (Градиент) */}
+                              <div className="lg:w-[400px] bg-gradient-to-br from-[#1e40af] via-[#3b82f6] to-[#6366f1] rounded-[32px] p-8 text-white shadow-2xl shadow-blue-200 relative overflow-hidden flex flex-col justify-between">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                                <div className="relative z-10">
+                                  <h4 className="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em] mb-8 opacity-80">Финансовый расчет</h4>
+                                  <div className="space-y-4">
+                                    <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className="opacity-80">📦</span>
+                                        <span className="font-bold opacity-90 text-[11px]">Товары (Invoice):</span>
+                                      </div>
+                                      <span className="font-black text-sm">$ {(order.order_items?.reduce((sum: number, item: any) => {
+                                        const p = parseFloat(item.actual_price_rmb || item.price_per_unit_rmb) || 0;
+                                        const q = parseFloat(item.actual_qty || item.total_qty) || 0;
+                                        return sum + (p * q);
+                                      }, 0) / rates.cross).toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
-                                      <span className="text-blue-100">Таможня (Пошлина+НДС):</span>
-                                      <span className="font-bold">
+                                    <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className="opacity-80">🛂</span>
+                                        <span className="font-bold opacity-90 text-[11px]">Таможня (Пошлина+НДС):</span>
+                                      </div>
+                                      <span className="font-black text-sm">
                                         $ {(
                                           (order.order_items?.reduce((sum: number, item: any) => {
                                             const p = parseFloat(item.actual_price_rmb || item.price_per_unit_rmb) || 0;
@@ -249,13 +269,19 @@ export default function Dashboard() {
                                         ).toFixed(2)}
                                       </span>
                                     </div>
-                                    <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
-                                      <span className="text-blue-100">Логистика:</span>
-                                      <span className="font-bold">$ {order.logistic_cost_usd || 0}</span>
+                                    <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className="opacity-80">🚢</span>
+                                        <span className="font-bold opacity-90 text-[11px]">Логистика:</span>
+                                      </div>
+                                      <span className="font-black text-sm">$ {order.logistic_cost_usd || 0}</span>
                                     </div>
-                                    <div className="flex justify-between text-xs border-b border-blue-500/30 pb-2">
-                                      <span className="text-blue-100">Прочие расходы:</span>
-                                      <span className="font-bold">
+                                    <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className="opacity-80">🔮</span>
+                                        <span className="font-bold opacity-90 text-[11px]">Прочие расходы:</span>
+                                      </div>
+                                      <span className="font-black text-sm">
                                         $ {(
                                           parseFloat(order.bank_fees_usd || 0) + 
                                           parseFloat(order.company_service_usd || 0) + 
@@ -266,9 +292,9 @@ export default function Dashboard() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="mt-6 pt-4 border-t border-blue-400/30">
-                                  <div className="text-[10px] text-blue-200 uppercase font-bold mb-1">Всего к оплате</div>
-                                  <div className="text-2xl font-black">
+                                <div className="relative z-10 mt-12 pt-6 border-t border-white/20">
+                                  <div className="text-[10px] text-blue-100 uppercase font-black mb-1 opacity-80">Всего к оплате</div>
+                                  <div className="text-4xl font-black tracking-tighter">
                                     {Math.round(
                                       (parseFloat(order.payment_1_rub || 0) + 
                                        parseFloat(order.payment_2_rub || 0) + 
@@ -279,33 +305,23 @@ export default function Dashboard() {
                               </div>
                             </div>
 
-                            {/* Секция 3: Доставка и График платежей */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-gray-100">
-                              <div>
-                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Доставка и сроки</h4>
-                                <div className="flex items-center gap-3 text-sm">
-                                  <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">📍</div>
-                                  <div>
-                                    <div className="font-bold text-gray-800">{order.address_delivery || 'Адрес не указан'}</div>
-                                    <div className="text-xs text-gray-500">{order.delivery_days || 'Сроки уточняются'}</div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div>
-                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">График платежей</h4>
-                                <div className="flex gap-4">
-                                  {[
-                                    {label: '1-й', val: order.payment_1_rub},
-                                    {label: '2-й', val: order.payment_2_rub},
-                                    {label: '3-й', val: order.payment_3_rub}
-                                  ].map((p, i) => (
-                                    <div key={i} className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                      <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">{p.label} платеж</div>
-                                      <div className="text-xs font-black text-gray-800">{Math.round(p.val || 0).toLocaleString()} ₽</div>
+                            {/* График платежей */}
+                            <div className="pt-6 border-t border-gray-100">
+                              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">График платежей</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {[
+                                  {label: '1-й платеж', val: order.payment_1_rub},
+                                  {label: '2-й платеж', val: order.payment_2_rub},
+                                  {label: '3-й платеж', val: order.payment_3_rub}
+                                ].map((p, i) => (
+                                  <div key={i} className="bg-white border border-gray-100 rounded-[20px] p-5 shadow-sm flex items-center justify-between">
+                                    <div>
+                                      <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-1">{p.label}</div>
+                                      <div className="text-sm font-black text-gray-800">{Math.round(p.val || 0).toLocaleString()} ₽</div>
                                     </div>
-                                  ))}
-                                </div>
+                                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-lg shadow-inner">🗓️</div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
 
