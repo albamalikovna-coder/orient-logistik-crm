@@ -186,7 +186,7 @@ export default function CreateOrder() {
                       type="file" 
                       accept="image/*"
                       className="hidden"
-                      ref={el => fileInputRefs.current[index] = el}
+                      ref={el => { fileInputRefs.current[index] = el; }}
                       onChange={e => handleFileUpload(index, e)}
                     />
                   </div>
