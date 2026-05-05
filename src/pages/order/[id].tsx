@@ -7,6 +7,8 @@ export default function OrderDetails() {
   const { id } = router.query;
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
+  const [extraCharges, setExtraCharges] = useState<any[]>([]);
+  const [newCharge, setNewCharge] = useState({ name: '', amount_rmb: '' });
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
@@ -45,9 +47,11 @@ export default function OrderDetails() {
 
     const { data: orderData } = await supabase.from('orders').select('*').eq('id', id).single();
     const { data: itemsData } = await supabase.from('order_items').select('*').eq('order_id', id);
+    const { data: chargesData } = await supabase.from('order_extra_charges').select('*').eq('order_id', id);
 
     setOrder(orderData);
     setItems(itemsData || []);
+    setExtraCharges(chargesData || []);
     setLoading(false);
   }
 
