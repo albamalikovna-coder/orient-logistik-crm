@@ -133,18 +133,19 @@ export default function Dashboard() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="w-10 px-6 py-3"></th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Организация</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Итого (RUB)</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400">Загрузка данных...</td></tr>
-              ) : orders.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400">Заказов пока нет</td></tr>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Организация</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Стоимость товаров в Китае</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Стоимость в России</th>
+                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+               </tr>
+             </thead>
+             <tbody className="bg-white divide-y divide-gray-200">
+               {loading ? (
+                 <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-400">Загрузка данных...</td></tr>
+               ) : orders.length === 0 ? (
+                 <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-400">Заказов пока нет</td></tr>
               ) : (
                 orders.map((order) => (
                   <React.Fragment key={order.id}>
@@ -163,32 +164,41 @@ export default function Dashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {order.company_name || 'Без названия'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-[10px] uppercase tracking-wider font-bold rounded-md ${
-                          order.status === 'pending_payment' ? 'bg-green-100 text-green-700' : 
-                          order.status === 'calculating' ? 'bg-yellow-100 text-yellow-700' : 
-                          order.status === 'draft' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {order.status === 'pending_payment' ? 'Согласовано' : 
-                           order.status === 'calculating' ? 'Расчет' : 
-                           order.status === 'draft' ? 'Черновик' : order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                        {Math.round(
-                          (parseFloat(order.payment_1_rub || 0) + 
-                           parseFloat(order.payment_2_rub || 0) + 
-                           parseFloat(order.payment_3_rub || 0)) || (order.total_amount_rub || 0)
-                        ).toLocaleString()} ₽
-                      </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <span className={`px-2 py-1 text-[10px] uppercase tracking-wider font-bold rounded-md ${
+                           order.status === 'pending_payment' ? 'bg-green-100 text-green-700' : 
+                           order.status === 'calculating' ? 'bg-yellow-100 text-yellow-700' : 
+                           order.status === 'draft' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                         }`}>
+                           {order.status === 'pending_payment' ? 'Согласовано' : 
+                            order.status === 'calculating' ? 'Расчет' : 
+                            order.status === 'draft' ? 'Черновик' : order.status}
+                         </span>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                         {Math.round(
+                           (order.order_items?.reduce((sum: number, item: any) => {
+                             const p = parseFloat(item.actual_price_rmb || item.price_per_unit_rmb) || 0;
+                             const q = parseFloat(item.actual_qty || item.total_qty) || 0;
+                             return sum + (p * q);
+                           }, 0) || 0) * rates.cny
+                         ).toLocaleString()} ₽
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                         {Math.round(
+                           (parseFloat(order.payment_1_rub || 0) + 
+                            parseFloat(order.payment_2_rub || 0) + 
+                            parseFloat(order.payment_3_rub || 0)) || (order.total_amount_rub || 0)
+                         ).toLocaleString()} ₽
+                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button className="text-blue-600 hover:text-blue-900">Открыть</button>
                       </td>
                     </tr>
 
-                    {expandedOrders[order.id] && (
-                      <tr className="bg-gray-50/30">
-                        <td colSpan={6} className="px-6 pb-8 pt-2">
+                     {expandedOrders[order.id] && (
+                       <tr className="bg-gray-50/30">
+                         <td colSpan={7} className="px-6 pb-8 pt-2">
                           <div className="bg-white border border-gray-100 rounded-[24px] shadow-xl shadow-gray-200/50 overflow-hidden p-8 space-y-8">
                             
                             <div className="flex flex-col lg:flex-row gap-8">
