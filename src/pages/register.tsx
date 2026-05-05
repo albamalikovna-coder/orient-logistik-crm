@@ -22,11 +22,12 @@ export default function Register() {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: `${window.location.origin}/login?confirmed=true`,
         },
       });
 
       if (error) throw error;
-      alert('Регистрация успешна! Теперь вы можете войти.');
+      alert('Регистрация успешна! Пожалуйста, проверьте почту для подтверждения аккаунта.');
       router.push('/login');
     } catch (error: any) {
       alert(error.message || 'Ошибка регистрации');

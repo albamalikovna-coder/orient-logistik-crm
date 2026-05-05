@@ -8,6 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { confirmed } = router.query;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +50,12 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-blue-900">OrientLogistik</h1>
           <p className="text-gray-500 mt-2">Вход в систему управления</p>
         </div>
+
+        {confirmed && (
+          <div className="mb-6 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg text-center font-bold">
+            ✅ Почта успешно подтверждена! Теперь вы можете войти.
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
