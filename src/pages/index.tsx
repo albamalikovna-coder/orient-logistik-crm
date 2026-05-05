@@ -34,15 +34,26 @@ export default function Dashboard() {
     setLoading(false);
   }
 
-  async function updateRate() {
-    setSavingRate(true);
-    const { error } = await supabase
-      .from('settings')
-      .upsert({ key: 'exchange_rate', value: exchangeRate });
-    
-    if (error) alert('Ошибка при сохранении курса');
-    else alert('Курс обновлен!');
-    setSavingRate(false);
+  async function fetchCbrRate() {
+    try {
+      setSavingRate(true);
+      const res = await fetch('https://www.cbr-xml-daily.ru/daily_json.js');
+      const data = await res.json();
+      const rate = data.Valute.CNY.Value;
+      setExchangeRate(rate.toString());
+      
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ key: 'exchange_rate', value: rate.toString() });
+      
+      if (error) throw error;
+      alert(`Курс ЦБ (${rate}) получен и сохранен!`);
+    } catch (error) {
+      alert('Ошибка при получении курса ЦБ');
+      console.error(error);
+    } finally {
+      setSavingRate(false);
+    }
   }
 
   return (
@@ -66,13 +77,22 @@ export default function Dashboard() {
               <span className="text-gray-400">₽</span>
             </div>
           </div>
-          <button 
-            onClick={updateRate}
-            disabled={savingRate}
-            className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition-colors"
-          >
-            {savingRate ? '...' : '💾'}
-          </button>
+          <div className="flex flex-col gap-1">
+            <button 
+              onClick={updateRate}
+              disabled={savingRate}
+              className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-100 transition-colors text-xs font-bold"
+            >
+              {savingRate ? '...' : 'СОХРАНИТЬ'}
+            </button>
+            <button 
+              onClick={fetchCbrRate}
+              disabled={savingRate}
+              className="bg-orange-50 text-orange-600 px-3 py-1 rounded-lg hover:bg-orange-100 transition-colors text-xs font-bold"
+            >
+              КУРС ЦБ
+            </button>
+          </div>
         </div>
 
         <button 
