@@ -75,6 +75,57 @@ export default function CreateOrder() {
     }
   };
 
+  const addRemark = () => {
+    setExtraRemarks([...extraRemarks, { text: '', photo_url: '' }]);
+  };
+
+  const removeRemark = (index: number) => {
+    setExtraRemarks(extraRemarks.filter((_, i) => i !== index));
+  };
+
+  const updateRemark = (index: number, field: string, value: string) => {
+    const newRemarks = [...extraRemarks];
+    (newRemarks[index] as any)[field] = value;
+    setExtraRemarks(newRemarks);
+  };
+
+  const handleRemarkFileUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    try {
+      const url = await uploadFile(file);
+      updateRemark(index, 'photo_url', url);
+    } catch (error) {
+      alert('Ошибка загрузки фото');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemarkPaste = async (index: number, e: React.ClipboardEvent) => {
+    const clipboardItems = e.clipboardData?.items;
+    if (!clipboardItems) return;
+
+    for (let i = 0; i < clipboardItems.length; i++) {
+      if (clipboardItems[i].type.indexOf('image') !== -1) {
+        const blob = clipboardItems[i].getAsFile();
+        if (blob) {
+          setLoading(true);
+          try {
+            const url = await uploadFile(blob);
+            updateRemark(index, 'photo_url', url);
+          } catch (error) {
+            alert('Ошибка загрузки фото');
+          } finally {
+            setLoading(false);
+          }
+          break;
+        }
+      }
+    }
+  };
+
   const handleItemPaste = async (index: number, e: React.ClipboardEvent) => {
     const clipboardItems = e.clipboardData?.items;
     if (!clipboardItems) return;
