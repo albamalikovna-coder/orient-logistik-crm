@@ -230,6 +230,38 @@ export default function OrderDetails() {
     if (error) {
       alert('Ошибка при сохранении: ' + error.message);
     } else {
+      // Отправка уведомления клиенту
+      try {
+        const { data: clientData } = await supabase.from('profiles').select('email').eq('id', order.client_id).single();
+        if (clientData?.email) {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: [clientData.email],
+              subject: `📊 Расчет готов: Заказ №${order.id.substring(0,8)}`,
+              html: `
+                <div style="font-family: sans-serif; padding: 20px;">
+                  <h2 style="color: #1e3a8a;">Расчет вашей поставки готов</h2>
+                  <p>Специалисты OrientLogistik подготовили расчет для вашей компании: <strong>${order.company_name}</strong>.</p>
+                  <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><strong>Итого к оплате:</strong> ${Math.round(finalRub).toLocaleString()} ₽</p>
+                    <p style="margin: 5px 0;"><strong>Статус:</strong> Расчет готов</p>
+                  </div>
+                  <p>Пожалуйста, проверьте детали и согласуйте расчет в личном кабинете.</p>
+                  <a href="https://orient-logistik-crm.pages.dev/order/${order.id}" 
+                     style="background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+                    Посмотреть расчет в CRM
+                  </a>
+                </div>
+              `
+            })
+          });
+        }
+      } catch (e) {
+        console.error('Email error:', e);
+      }
+
       await fetchAllData();
       alert('Данные успешно сохранены! Итого: ' + Math.round(finalRub).toLocaleString() + ' ₽');
     }

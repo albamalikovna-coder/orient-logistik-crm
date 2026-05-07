@@ -198,6 +198,33 @@ export default function CreateOrder() {
 
       if (itemsError) throw itemsError;
 
+      // Отправка уведомления админу
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: ['sharifullin.dev@gmail.com'], // Замените на нужный email админа
+            subject: `🆕 Новая заявка: ${companyName}`,
+            html: `
+              <div style="font-family: sans-serif; padding: 20px;">
+                <h2 style="color: #1e3a8a;">Поступила новая заявка</h2>
+                <p><strong>Организация:</strong> ${companyName}</p>
+                <p><strong>Позиций в заказе:</strong> ${items.length}</p>
+                <p><strong>Общее примечание:</strong> ${orderNotes || 'Нет'}</p>
+                <hr style="border: 1px solid #eee; margin: 20px 0;" />
+                <a href="https://orient-logistik-crm.pages.dev/order/${order.id}" 
+                   style="background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                  Перейти к расчету в CRM
+                </a>
+              </div>
+            `
+          })
+        });
+      } catch (e) {
+        console.error('Email error:', e);
+      }
+
       // Сохраняем дополнительные примечания
       if (extraRemarks.length > 0) {
         const remarksToInsert = extraRemarks.map(r => ({
