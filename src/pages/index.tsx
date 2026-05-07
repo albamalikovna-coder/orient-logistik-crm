@@ -1,3 +1,4 @@
+// V2.1 - Last Update: 2026-05-07
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/router';
