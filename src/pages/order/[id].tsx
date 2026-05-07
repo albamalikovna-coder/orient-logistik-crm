@@ -309,71 +309,90 @@ export default function OrderDetails() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {items.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <img src={item.photo_url} className="w-10 h-10 rounded shadow-sm object-cover" />
-                            <div className="font-bold text-gray-800">{item.name_ru}</div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          {isExecutive ? (
-                            <div className="grid grid-cols-3 gap-1">
-                              <input placeholder="ТН ВЭД" className="border rounded p-1 text-[10px]" value={item.hscode ?? ''} 
-                                onChange={(e) => handleItemChange(item.id, 'hscode', e.target.value)} 
-                                onBlur={(e) => saveItem(item.id, 'hscode', e.target.value)}
-                              />
-                              <input placeholder="Вес кг" type="number" step="0.01" className="border rounded p-1 text-[10px]" value={item.weight_kg ?? ''} 
-                                onChange={(e) => handleItemChange(item.id, 'weight_kg', e.target.value)} 
-                                onBlur={(e) => saveItem(item.id, 'weight_kg', e.target.value)}
-                              />
-                              <input placeholder="Объем м3" type="number" step="0.01" className="border rounded p-1 text-[10px]" value={item.volume_m3 ?? ''} 
-                                onChange={(e) => handleItemChange(item.id, 'volume_m3', e.target.value)} 
-                                onBlur={(e) => saveItem(item.id, 'volume_m3', e.target.value)}
-                              />
-                            </div>
-                          ) : (
-                            <div className="text-xs text-gray-500">
-                              {item.hscode} | {item.weight_kg}кг | {item.volume_m3}м³
-                            </div>
+                      {items.map((item) => (
+                        <React.Fragment key={item.id}>
+                          <tr className="hover:bg-gray-50/50">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-3">
+                                <img src={item.photo_url} className="w-10 h-10 rounded shadow-sm object-cover" />
+                                <div className="font-bold text-gray-800">{item.name_ru}</div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              {isExecutive ? (
+                                <div className="grid grid-cols-3 gap-1">
+                                  <input placeholder="ТН ВЭД" className="border rounded p-1 text-[10px]" value={item.hscode ?? ''} 
+                                    onChange={(e) => handleItemChange(item.id, 'hscode', e.target.value)} 
+                                    onBlur={(e) => saveItem(item.id, 'hscode', e.target.value)}
+                                  />
+                                  <input placeholder="Вес кг" type="number" step="0.01" className="border rounded p-1 text-[10px]" value={item.weight_kg ?? ''} 
+                                    onChange={(e) => handleItemChange(item.id, 'weight_kg', e.target.value)} 
+                                    onBlur={(e) => saveItem(item.id, 'weight_kg', e.target.value)}
+                                  />
+                                  <input placeholder="Объем м3" type="number" step="0.01" className="border rounded p-1 text-[10px]" value={item.volume_m3 ?? ''} 
+                                    onChange={(e) => handleItemChange(item.id, 'volume_m3', e.target.value)} 
+                                    onBlur={(e) => saveItem(item.id, 'volume_m3', e.target.value)}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-500">
+                                  {item.hscode} | {item.weight_kg}кг | {item.volume_m3}м³
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-4">
+                              {isExecutive ? (
+                                <div className="flex gap-1">
+                                  <input type="number" step="0.01" className="w-14 border rounded p-1 font-bold text-blue-600" value={item.actual_price_rmb ?? ''} placeholder={item.price_per_unit_rmb} 
+                                    onChange={(e) => handleItemChange(item.id, 'actual_price_rmb', e.target.value)} 
+                                    onBlur={(e) => saveItem(item.id, 'actual_price_rmb', e.target.value)}
+                                  />
+                                  <input type="number" className="w-10 border rounded p-1" value={item.actual_qty ?? ''} placeholder={item.total_qty} 
+                                    onChange={(e) => handleItemChange(item.id, 'actual_qty', e.target.value)} 
+                                    onBlur={(e) => saveItem(item.id, 'actual_qty', e.target.value)}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="font-medium">
+                                  {(item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb} ¥ × 
+                                  {(item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty} шт.
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-4">
+                              {isExecutive ? (
+                                <input type="number" step="0.1" className="w-12 border rounded p-1 font-bold text-orange-600" value={item.duty_percent ?? ''} 
+                                  onChange={(e) => handleItemChange(item.id, 'duty_percent', e.target.value)} 
+                                  onBlur={(e) => saveItem(item.id, 'duty_percent', e.target.value)}
+                                />
+                              ) : (
+                                <span className="font-bold text-orange-600">{item.duty_percent}%</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 text-right font-bold text-gray-900">
+                              $ {(((parseFloat((item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb) || 0) * 
+                                   (parseFloat((item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty) || 0)) / rates.cross).toFixed(2)}
+                            </td>
+                          </tr>
+                          {/* Ряд с примечанием к позиции */}
+                          {(item.remark_text || item.remark_photo_url) && (
+                            <tr className="bg-blue-50/30">
+                              <td colSpan={5} className="px-4 py-2 border-b border-gray-100">
+                                <div className="flex gap-3 items-start">
+                                  {item.remark_photo_url && (
+                                    <img src={item.remark_photo_url} className="w-12 h-12 rounded border border-blue-100 object-contain bg-white" alt="Примечание" />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="text-[9px] text-blue-400 font-bold uppercase italic">Примечание к товару:</div>
+                                    <div className="text-xs text-blue-800">{item.remark_text}</div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                        <td className="px-4 py-4">
-                          {isExecutive ? (
-                            <div className="flex gap-1">
-                              <input type="number" step="0.01" className="w-14 border rounded p-1 font-bold text-blue-600" value={item.actual_price_rmb ?? ''} placeholder={item.price_per_unit_rmb} 
-                                onChange={(e) => handleItemChange(item.id, 'actual_price_rmb', e.target.value)} 
-                                onBlur={(e) => saveItem(item.id, 'actual_price_rmb', e.target.value)}
-                              />
-                              <input type="number" className="w-10 border rounded p-1" value={item.actual_qty ?? ''} placeholder={item.total_qty} 
-                                onChange={(e) => handleItemChange(item.id, 'actual_qty', e.target.value)} 
-                                onBlur={(e) => saveItem(item.id, 'actual_qty', e.target.value)}
-                              />
-                            </div>
-                          ) : (
-                            <div className="font-medium">
-                              {(item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb} ¥ × 
-                              {(item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty} шт.
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          {isExecutive ? (
-                            <input type="number" step="0.1" className="w-12 border rounded p-1 font-bold text-orange-600" value={item.duty_percent ?? ''} 
-                              onChange={(e) => handleItemChange(item.id, 'duty_percent', e.target.value)} 
-                              onBlur={(e) => saveItem(item.id, 'duty_percent', e.target.value)}
-                            />
-                          ) : (
-                            <span className="font-bold text-orange-600">{item.duty_percent}%</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 text-right font-bold text-gray-900">
-                          $ {(((parseFloat((item.actual_price_rmb !== null && item.actual_price_rmb !== undefined && item.actual_price_rmb !== '') ? item.actual_price_rmb : item.price_per_unit_rmb) || 0) * 
-                               (parseFloat((item.actual_qty !== null && item.actual_qty !== undefined && item.actual_qty !== '') ? item.actual_qty : item.total_qty) || 0)) / rates.cross).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                        </React.Fragment>
+                      ))}
+
                   </tbody>
                 </table>
               </div>

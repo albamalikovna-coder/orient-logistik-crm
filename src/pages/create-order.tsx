@@ -8,38 +8,25 @@ export default function CreateOrder() {
   const [companyName, setCompanyName] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [items, setItems] = useState([
-    { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', photo_url: '', description: '' }
+    { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', photo_url: '', description: '', remark_text: '', remark_photo_url: '' }
   ]);
   const [extraRemarks, setExtraRemarks] = useState<{ text: string, photo_url: string }[]>([]);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const remarkFileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const itemRemarkFileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const addItem = () => {
-    setItems([...items, { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', photo_url: '', description: '' }]);
-  };
-
-  const addRemark = () => {
-    setExtraRemarks([...extraRemarks, { text: '', photo_url: '' }]);
+    setItems([...items, { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', photo_url: '', description: '', remark_text: '', remark_photo_url: '' }]);
   };
 
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const removeRemark = (index: number) => {
-    setExtraRemarks(extraRemarks.filter((_, i) => i !== index));
-  };
-
   const updateItem = (index: number, field: string, value: string) => {
     const newItems = [...items];
     (newItems[index] as any)[field] = value;
     setItems(newItems);
-  };
-
-  const updateRemark = (index: number, field: string, value: string) => {
-    const newRemarks = [...extraRemarks];
-    (newRemarks[index] as any)[field] = value;
-    setExtraRemarks(newRemarks);
   };
 
   const uploadFile = async (file: File | Blob) => {
@@ -74,15 +61,15 @@ export default function CreateOrder() {
     }
   };
 
-  const handleRemarkFileUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleItemRemarkPhotoUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setLoading(true);
     try {
       const url = await uploadFile(file);
-      updateRemark(index, 'photo_url', url);
+      updateItem(index, 'remark_photo_url', url);
     } catch (error) {
-      alert('Ошибка загрузки фото');
+      alert('Ошибка загрузки фото примечания');
     } finally {
       setLoading(false);
     }
@@ -100,29 +87,6 @@ export default function CreateOrder() {
           try {
             const url = await uploadFile(blob);
             updateItem(index, 'photo_url', url);
-          } catch (error) {
-            alert('Ошибка загрузки фото');
-          } finally {
-            setLoading(false);
-          }
-          break;
-        }
-      }
-    }
-  };
-
-  const handleRemarkPaste = async (index: number, e: React.ClipboardEvent) => {
-    const clipboardItems = e.clipboardData?.items;
-    if (!clipboardItems) return;
-
-    for (let i = 0; i < clipboardItems.length; i++) {
-      if (clipboardItems[i].type.indexOf('image') !== -1) {
-        const blob = clipboardItems[i].getAsFile();
-        if (blob) {
-          setLoading(true);
-          try {
-            const url = await uploadFile(blob);
-            updateRemark(index, 'photo_url', url);
           } catch (error) {
             alert('Ошибка загрузки фото');
           } finally {
@@ -170,6 +134,8 @@ export default function CreateOrder() {
         link: item.link,
         photo_url: item.photo_url,
         description: item.description,
+        remark_text: item.remark_text,
+        remark_photo_url: item.remark_photo_url,
         price_per_unit_rmb: parseFloat(item.price_per_unit_rmb) || 0,
         total_qty: parseInt(item.total_qty) || 0,
         total_price_rmb: (parseFloat(item.price_per_unit_rmb) || 0) * (parseInt(item.total_qty) || 0)
@@ -285,6 +251,31 @@ export default function CreateOrder() {
                   <div className="col-span-full">
                     <label className="block text-xs font-bold text-gray-400 uppercase">Ссылка</label>
                     <input type="url" className="w-full border-b border-gray-300 bg-transparent py-1 outline-none focus:border-blue-500" value={item.link} onChange={e => updateItem(index, 'link', e.target.value)} />
+                  </div>
+
+                  {/* Примечание к позиции */}
+                  <div className="col-span-full pt-4 border-t border-gray-100 flex gap-4">
+                    <div 
+                      onClick={() => itemRemarkFileInputRefs.current[index]?.click()}
+                      className="w-16 h-16 bg-gray-50 rounded flex items-center justify-center border border-dashed border-gray-300 cursor-pointer overflow-hidden shrink-0"
+                    >
+                      {item.remark_photo_url ? (
+                        <img src={item.remark_photo_url} className="w-full h-full object-contain" />
+                      ) : (
+                        <span className="text-[8px] text-gray-400 font-bold">ФОТО ПРИМ.</span>
+                      )}
+                      <input type="file" className="hidden" ref={el => { itemRemarkFileInputRefs.current[index] = el; }} onChange={e => handleItemRemarkPhotoUpload(index, e)} />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase">Примечание к этой позиции</label>
+                      <input 
+                        type="text" 
+                        placeholder="Напр: уточнение по размеру, упаковке или цвету..."
+                        className="w-full border-b border-gray-200 bg-transparent py-1 text-sm outline-none focus:border-blue-300" 
+                        value={item.remark_text} 
+                        onChange={e => updateItem(index, 'remark_text', e.target.value)} 
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

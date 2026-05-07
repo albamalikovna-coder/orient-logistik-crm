@@ -59,6 +59,10 @@ CREATE TABLE IF NOT EXISTS order_items (
   weight_kg DECIMAL DEFAULT 0,
   volume_m3 DECIMAL DEFAULT 0,
   
+  -- Примечания к позиции
+  remark_text TEXT,
+  remark_photo_url TEXT,
+  
   -- Цены и расчеты
   price_per_unit_rmb DECIMAL DEFAULT 0,
   total_qty INTEGER DEFAULT 1,
