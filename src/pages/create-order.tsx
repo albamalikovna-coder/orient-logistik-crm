@@ -10,14 +10,24 @@ export default function CreateOrder() {
   const [items, setItems] = useState([
     { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', photo_url: '', description: '' }
   ]);
+  const [extraRemarks, setExtraRemarks] = useState<{ text: string, photo_url: string }[]>([]);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const remarkFileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const addItem = () => {
     setItems([...items, { name_ru: '', price_per_unit_rmb: '', total_qty: '', link: '', photo_url: '', description: '' }]);
   };
 
+  const addRemark = () => {
+    setExtraRemarks([...extraRemarks, { text: '', photo_url: '' }]);
+  };
+
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
+  };
+
+  const removeRemark = (index: number) => {
+    setExtraRemarks(extraRemarks.filter((_, i) => i !== index));
   };
 
   const updateItem = (index: number, field: string, value: string) => {
@@ -26,24 +36,37 @@ export default function CreateOrder() {
     setItems(newItems);
   };
 
-  const uploadFile = async (index: number, file: File | Blob) => {
+  const updateRemark = (index: number, field: string, value: string) => {
+    const newRemarks = [...extraRemarks];
+    (newRemarks[index] as any)[field] = value;
+    setExtraRemarks(newRemarks);
+  };
+
+  const uploadFile = async (file: File | Blob) => {
+    const fileExt = (file as File).name?.split('.').pop() || 'png';
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `uploads/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  const handleItemFileUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     setLoading(true);
     try {
-      const fileExt = (file as File).name?.split('.').pop() || 'png';
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `items/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
-
-      updateItem(index, 'photo_url', data.publicUrl);
+      const url = await uploadFile(file);
+      updateItem(index, 'photo_url', url);
     } catch (error) {
       alert('Ошибка загрузки фото');
     } finally {
@@ -51,21 +74,60 @@ export default function CreateOrder() {
     }
   };
 
-  const handleFileUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRemarkFileUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await uploadFile(index, file);
+    setLoading(true);
+    try {
+      const url = await uploadFile(file);
+      updateRemark(index, 'photo_url', url);
+    } catch (error) {
+      alert('Ошибка загрузки фото');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePaste = async (index: number, e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
+  const handleItemPaste = async (index: number, e: React.ClipboardEvent) => {
+    const clipboardItems = e.clipboardData?.items;
+    if (!clipboardItems) return;
 
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const blob = items[i].getAsFile();
+    for (let i = 0; i < clipboardItems.length; i++) {
+      if (clipboardItems[i].type.indexOf('image') !== -1) {
+        const blob = clipboardItems[i].getAsFile();
         if (blob) {
-          await uploadFile(index, blob);
+          setLoading(true);
+          try {
+            const url = await uploadFile(blob);
+            updateItem(index, 'photo_url', url);
+          } catch (error) {
+            alert('Ошибка загрузки фото');
+          } finally {
+            setLoading(false);
+          }
+          break;
+        }
+      }
+    }
+  };
+
+  const handleRemarkPaste = async (index: number, e: React.ClipboardEvent) => {
+    const clipboardItems = e.clipboardData?.items;
+    if (!clipboardItems) return;
+
+    for (let i = 0; i < clipboardItems.length; i++) {
+      if (clipboardItems[i].type.indexOf('image') !== -1) {
+        const blob = clipboardItems[i].getAsFile();
+        if (blob) {
+          setLoading(true);
+          try {
+            const url = await uploadFile(blob);
+            updateRemark(index, 'photo_url', url);
+          } catch (error) {
+            alert('Ошибка загрузки фото');
+          } finally {
+            setLoading(false);
+          }
           break;
         }
       }
@@ -119,6 +181,19 @@ export default function CreateOrder() {
 
       if (itemsError) throw itemsError;
 
+      // Сохраняем дополнительные примечания
+      if (extraRemarks.length > 0) {
+        const remarksToInsert = extraRemarks.map(r => ({
+          order_id: order.id,
+          text: r.text,
+          photo_url: r.photo_url
+        }));
+        const { error: remarksError } = await supabase
+          .from('order_remarks')
+          .insert(remarksToInsert);
+        if (remarksError) throw remarksError;
+      }
+
       const totalRmb = itemsToInsert.reduce((sum, item) => sum + item.total_price_rmb, 0);
       await supabase
         .from('orders')
@@ -171,7 +246,7 @@ export default function CreateOrder() {
             {items.map((item, index) => (
               <div 
                 key={index} 
-                onPaste={(e) => handlePaste(index, e)}
+                onPaste={(e) => handleItemPaste(index, e)}
                 className="p-4 border border-gray-100 rounded-lg relative bg-gray-50 flex flex-col md:flex-row gap-6 transition-all focus-within:ring-2 focus-within:ring-blue-100"
               >
                 {items.length > 1 && (
@@ -191,7 +266,7 @@ export default function CreateOrder() {
                        <span className="text-[8px] text-gray-300 block mt-1">Ctrl + V</span>
                      </div>
                    )}
-                   <input type="file" className="hidden" ref={el => { fileInputRefs.current[index] = el; }} onChange={e => handleFileUpload(index, e)} />
+                   <input type="file" className="hidden" ref={el => { fileInputRefs.current[index] = el; }} onChange={e => handleItemFileUpload(index, e)} />
                  </div>
 
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,6 +292,46 @@ export default function CreateOrder() {
           </div>
 
           <button type="button" onClick={addItem} className="w-full py-3 border-2 border-dashed border-gray-200 text-gray-400 rounded-xl hover:bg-gray-50">+ Добавить позицию</button>
+
+          {/* Дополнительные примечания */}
+          <div className="space-y-4 pt-6 border-t border-gray-100">
+            <h2 className="text-lg font-bold text-blue-900">Дополнительные примечания</h2>
+            {extraRemarks.map((remark, index) => (
+              <div 
+                key={index} 
+                onPaste={(e) => handleRemarkPaste(index, e)}
+                className="p-4 border border-blue-50 rounded-lg relative bg-white flex flex-col md:flex-row gap-6"
+              >
+                <button type="button" onClick={() => removeRemark(index)} className="absolute top-2 right-2 text-red-400">×</button>
+                
+                <div 
+                  onClick={() => remarkFileInputRefs.current[index]?.click()}
+                  className="w-full md:w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                  title="Кликните для выбора или нажмите Ctrl+V для вставки"
+                >
+                  {remark.photo_url ? (
+                    <img src={remark.photo_url} className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="text-center">
+                      <span className="text-[10px] text-gray-400 font-bold block">ФОТО</span>
+                    </div>
+                  )}
+                  <input type="file" className="hidden" ref={el => { remarkFileInputRefs.current[index] = el; }} onChange={e => handleRemarkFileUpload(index, e)} />
+                </div>
+
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Текст примечания</label>
+                  <textarea 
+                    className="w-full border border-gray-200 rounded-md p-2 text-sm min-h-[80px]"
+                    placeholder="Введите описание или примечание..."
+                    value={remark.text}
+                    onChange={e => updateRemark(index, 'text', e.target.value)}
+                  />
+                </div>
+              </div>
+            ))}
+            <button type="button" onClick={addRemark} className="w-full py-2 border border-blue-200 text-blue-500 rounded-lg hover:bg-blue-50 text-sm">+ Добавить примечание с фото</button>
+          </div>
 
           <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-100">
             {loading ? 'Сохранение...' : 'Создать заявку'}

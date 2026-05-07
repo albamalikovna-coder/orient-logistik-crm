@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
 
@@ -8,9 +8,13 @@ export default function OrderDetails() {
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [extraCharges, setExtraCharges] = useState<any[]>([]);
+  const [remarks, setRemarks] = useState<any[]>([]);
   const [newCharge, setNewCharge] = useState({ name: '', amount_rmb: '' });
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [newRemark, setNewRemark] = useState({ text: '', photo_url: '' });
+  const [uploadingRemark, setUploadingRemark] = useState(false);
+  const remarkFileRef = useRef<HTMLInputElement>(null);
   
   // Курсы валют
   const [rates, setRates] = useState({ usd: 92.5, cny: 12.8, cross: 7.22 });
@@ -48,10 +52,12 @@ export default function OrderDetails() {
     const { data: orderData } = await supabase.from('orders').select('*').eq('id', id).single();
     const { data: itemsData } = await supabase.from('order_items').select('*').eq('order_id', id);
     const { data: chargesData } = await supabase.from('order_extra_charges').select('*').eq('order_id', id);
+    const { data: remarksData } = await supabase.from('order_remarks').select('*').eq('order_id', id).order('created_at', { ascending: true });
 
     setOrder(orderData);
     setItems(itemsData || []);
     setExtraCharges(chargesData || []);
+    setRemarks(remarksData || []);
     setLoading(false);
   }
 
@@ -108,6 +114,51 @@ export default function OrderDetails() {
     if (!error) {
       setNewCharge({ name: '', amount_rmb: '' });
       fetchAllData();
+    }
+  }
+
+  async function handleAddRemark() {
+    if (!newRemark.text && !newRemark.photo_url) return;
+    setLoading(true);
+    const { error } = await supabase
+      .from('order_remarks')
+      .insert([{
+        order_id: id,
+        text: newRemark.text,
+        photo_url: newRemark.photo_url
+      }]);
+    
+    if (!error) {
+      setNewRemark({ text: '', photo_url: '' });
+      await fetchAllData();
+    }
+    setLoading(false);
+  }
+
+  async function uploadRemarkPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingRemark(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `remarks/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      setNewRemark(prev => ({ ...prev, photo_url: data.publicUrl }));
+    } catch (error) {
+      alert('Ошибка загрузки фото');
+    } finally {
+      setUploadingRemark(false);
     }
   }
 
@@ -442,6 +493,66 @@ export default function OrderDetails() {
                     СОГЛАСОВАТЬ РАСЧЕТ ✅
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Дополнительные примечания */}
+        <div className="mt-8 bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-10">
+          <h2 className="text-xl font-bold text-blue-900 mb-6 flex items-center gap-2">
+            <span>📝 Дополнительные примечания</span>
+          </h2>
+          
+          <div className="space-y-6">
+            {remarks.map((remark) => (
+              <div key={remark.id} className="flex flex-col md:flex-row gap-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                {remark.photo_url && (
+                  <div className="w-full md:w-48 h-48 bg-white rounded-lg overflow-hidden border border-gray-200">
+                    <img src={remark.photo_url} className="w-full h-full object-contain" alt="Примечание" />
+                  </div>
+                )}
+                <div className="flex-1 whitespace-pre-wrap text-gray-700 text-sm py-2">
+                  {remark.text}
+                </div>
+              </div>
+            ))}
+            
+            {remarks.length === 0 && (
+              <div className="text-center py-8 text-gray-400 text-sm italic">
+                Дополнительных примечаний пока нет
+              </div>
+            )}
+          </div>
+
+          <div className="mt-10 pt-6 border-t border-gray-100">
+            <h3 className="text-sm font-bold text-gray-400 uppercase mb-4">Добавить примечание</h3>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div 
+                onClick={() => remarkFileRef.current?.click()}
+                className="w-full md:w-24 h-24 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200 cursor-pointer hover:bg-gray-100 overflow-hidden"
+              >
+                {newRemark.photo_url ? (
+                  <img src={newRemark.photo_url} className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-[10px] text-gray-400 font-bold">{uploadingRemark ? '...' : 'ФОТО'}</span>
+                )}
+                <input type="file" className="hidden" ref={remarkFileRef} onChange={uploadRemarkPhoto} />
+              </div>
+              <div className="flex-1 flex flex-col gap-2">
+                <textarea 
+                  className="w-full border border-gray-200 rounded-lg p-3 text-sm min-h-[100px] outline-none focus:border-blue-400"
+                  placeholder="Напишите здесь дополнительное описание или примечание..."
+                  value={newRemark.text}
+                  onChange={e => setNewRemark(prev => ({ ...prev, text: e.target.value }))}
+                />
+                <button 
+                  onClick={handleAddRemark}
+                  disabled={loading || uploadingRemark}
+                  className="bg-blue-600 text-white py-2 px-6 rounded-lg font-bold text-sm self-end shadow-md hover:bg-blue-700 disabled:bg-gray-300"
+                >
+                  Опубликовать примечание
+                </button>
               </div>
             </div>
           </div>

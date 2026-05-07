@@ -1,0 +1,20 @@
+npm WARN exec The following package was not found and will be installed: next@16.2.5
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+▲ Next.js 16.2.5 (Turbopack)
+- Environments: .env.local
+
+  Running TypeScript ...
+It looks like you're trying to use TypeScript but do not have the required package(s) installed.
+
+Please install typescript, @types/react, and @types/node by running:
+
+	npm install --save-dev typescript @types/react @types/node
+
+If you are not trying to use TypeScript, please remove the tsconfig.json file from your package root (and any TypeScript files in your app and pages directories).
+
+Next.js build worker exited with code: 1 and signal: null

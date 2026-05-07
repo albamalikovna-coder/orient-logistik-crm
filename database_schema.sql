@@ -38,6 +38,15 @@ CREATE TABLE IF NOT EXISTS orders (
   notes TEXT
 );
 
+-- 2.1 Таблица примечаний к заказу
+CREATE TABLE IF NOT EXISTS order_remarks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+  text TEXT,
+  photo_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
+);
+
 -- 3. Таблица товаров в заказе
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
